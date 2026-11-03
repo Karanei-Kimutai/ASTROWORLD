@@ -36,14 +36,15 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 ## Building and running
 
-**Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. CP1 uses **no external libraries**. `ffmpeg` is only used to convert screenshots for this README.
+**Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. The renderer itself uses **no external libraries**. The live window (`astroworldWindow`, this branch) also needs **SDL2** (`sudo apt install libsdl2-dev`); without it CMake skips that target. `ffmpeg` is only used to convert screenshots for this README.
 
 ### With CMake
 
 ```bash
 cmake -S . -B build
 cmake --build build
-./build/astroworld
+./build/astroworld          # write every image as a PPM file
+./build/astroworldWindow    # show them live in a window
 ```
 
 ### Without CMake (single command)
@@ -51,6 +52,24 @@ cmake --build build
 ```bash
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
 ```
+
+### Live window (`checkpoint-1-window`)
+
+![Window viewer at dusk](docs/screenshots/windowViewer.png)
+
+`astroworldWindow` runs exactly the same pure C++ renderer. SDL2 only handles the last pipeline stage, **display**: each finished `FrameBuffer` is uploaded to a streaming texture (`SDL_PIXELFORMAT_RGB24` has the same byte layout as our `Color`, so nothing is converted) and presented in a resizable, letterboxed window. The window only redraws when something changes.
+
+| Key | Action |
+|---|---|
+| `1` / `2` | Day / night scene |
+| `←` / `→` | Move the time of day (`nightAmount` −/+ 0.1); dusk blends both moods |
+| `3` / `4` | Algorithm showcase / colour showcase |
+| `5` / `6` | Current scene reduced to 8-bit / 8-bit dithered |
+| `S` | Save the current image to `output/window_<view>.ppm` |
+| `H` | Show / hide the help overlay |
+| `Esc` / `Q` | Quit |
+
+Command-line options: `--night <0..1>` sets the starting time of day. `--capture <file.ppm>` renders one frame, reads it **back** from the renderer with `SDL_RenderReadPixels`, saves it and exits; add `--with-help` to keep the overlay. The capture of the day scene matches `astroworld`'s PPM output byte for byte, which shows the window displays the frame buffer exactly.
 
 ### Output
 
@@ -78,6 +97,7 @@ PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extensi
 ```
 src/
 ├── main.cpp                    CP1 entry point: renders and saves all images
+├── windowMain.cpp              Live SDL2 viewer for the same images (display stage only)
 ├── core/
 │   ├── vec2.h                  2D vector maths, pi, rounding helper
 │   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
@@ -126,7 +146,7 @@ docs/references/                Reference artwork the scene is matched against (
 | Concept | Implementation |
 |---|---|
 | **Raster vs. vector** | The bitmap font ([bitmapFont.cpp](src/text/bitmapFont.cpp)) is a *raster* font: it goes blocky when scaled (see the captions). The logo ([astroWordmark.cpp](src/text/astroWordmark.cpp)) is *vector*: its letters are described by curves and polygons, so it stays smooth at any size. |
-| **Frame buffer** | [frameBuffer.h](src/core/frameBuffer.h): a row-major pixel array, the CPU-side equivalent of the VRAM frame buffer. "Display" means writing it to a PPM file. |
+| **Frame buffer** | [frameBuffer.h](src/core/frameBuffer.h): a row-major pixel array, the CPU-side equivalent of the VRAM frame buffer. "Display" means writing it to a PPM file, or, in the windowed build, uploading it to video memory as a texture (and reading it back with `--capture`). |
 | **CPU vs. GPU** | CP1 rasterizes every pixel sequentially on the CPU. CP3 moves the same work to the GPU, where fragments are processed in parallel. |
 
 ### Colour theory and models
@@ -186,7 +206,7 @@ docs/references/                Reference artwork the scene is matched against (
 | 6. Fragment processing | `PixelShader` functions choose each pixel's colour |
 | 7. Output operations | Overwrite, alpha-blend, or stencil-mask into the buffer (SSAA compositing of the logo) |
 | 8. Frame buffer | `FrameBuffer` |
-| 9. Display | `savePpm` writes the image file (a live window in `checkpoint-1-window`) |
+| 9. Display | `savePpm` writes the image file; on `checkpoint-1-window` the frame buffer is uploaded to an SDL2 texture and presented in a window |
 
 ---
 

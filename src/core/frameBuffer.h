@@ -82,6 +82,14 @@ public:
      */
     bool savePpm(const std::string& filePath) const;
 
+    /**
+     * @brief Raw read-only access to the pixel array (row-major, 3 bytes per pixel).
+     *
+     * Lets a display back end (e.g. the SDL window) copy the finished image
+     * to the screen in one block - the "scan-out" step of the pipeline.
+     */
+    const Color* data() const { return pixels.data(); }
+
 private:
     int width;
     int height;
