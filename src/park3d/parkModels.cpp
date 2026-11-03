@@ -391,6 +391,15 @@ MeshData buildPersonTorso() {
 
 MeshData buildPersonLeg() { return makeCylinderBetween({0, 0, 0}, {0, -0.85, 0}, 0.08, 8, Color{60, 70, 110}); }
 
+MeshData buildMirrorBallPlinth() {
+    MeshData plinth;
+    plinth.append(makeCylinder(0.9, 0.9, 24, Color{60, 50, 80}));
+    plinth.append(makeTorus(0.9, 0.08, 32, 8, astroPalette::gold), Matrix4::translation({0, 0.9, 0}) * Matrix4::rotationX(pi / 2.0));
+    return plinth;
+}
+
+MeshData buildMirrorBall() { return makeEllipsoid({mirrorBallRadius, mirrorBallRadius, mirrorBallRadius}, 48, 32, Color{235, 238, 245}); }
+
 MeshData buildBalloon() {
     MeshData balloon = makeEllipsoid({0.3, 0.36, 0.3}, 18, 12, astroPalette::white);
     balloon.append(makeCone(0.06, 0.1, 8, astroPalette::white), Matrix4::translation({0, -0.44, 0}));

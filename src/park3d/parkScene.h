@@ -25,7 +25,7 @@ enum class MeshId {
     dropColumn, dropLights, dropSeats,
     carouselBase, carouselRotor, carouselBulbs, horse,
     rocket, bigTop, signFrame, signFace, buntingFlags, buntingStrings,
-    personTorso, personLeg, balloon, balloonStrings, searchlightBeam,
+    personTorso, personLeg, balloon, balloonStrings, searchlightBeam, mirrorBallPlinth, mirrorBall,
     count
 };
 inline constexpr std::size_t meshIdCount = static_cast<std::size_t>(MeshId::count);

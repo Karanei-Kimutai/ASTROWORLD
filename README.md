@@ -2,9 +2,16 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+The same park is drawn by **three renderers that we wrote**:
+- a 2D software rasterizer (CP1/CP2)
+- a real-time OpenGL 3D renderer (CP3, prototype)
+- a CPU ray tracer and path tracer (final)
 
-*Checkpoint 3: the park in real-time 3D with OpenGL. Below: the CP1/CP2 software renderer's version of the same scene.*
+![ASTROWORLD, path traced - final](docs/screenshots/pathTracedDay.png)
+
+*Final: the 3D park path traced with global illumination, 128 samples per pixel. Below: the real-time OpenGL version, then the CP1/CP2 software renderer's version of the same scene.*
+
+![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
 
 ![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
 
@@ -22,7 +29,7 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 4. [Course concepts → where they live in the code](#course-concepts--where-they-live-in-the-code)
 5. [How the software renderer maps to the rendering pipeline](#how-the-software-renderer-maps-to-the-rendering-pipeline)
 6. [Coding conventions](#coding-conventions)
-7. [Checkpoint log](#checkpoint-log)
+7. [Checkpoint log](#checkpoint-log), ending with the [final report (Checkpoint 4)](#checkpoint-4--final-demonstration)
 
 ---
 
@@ -37,7 +44,7 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
-| `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
+| `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
 
 ---
 
@@ -46,6 +53,8 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 **Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. The software renderer uses **no external libraries**. Optional targets, which CMake skips when their library is missing:
 - `astroworldWindow` (live player for the software renderer) needs **SDL2**: `sudo apt install libsdl2-dev`
 - `astroworldGl` (CP3, OpenGL 3.3 core) needs **GLFW** and the Khronos GL headers: `sudo apt install libglfw3-dev` (the headers come with Mesa's dev packages)
+
+The ray tracer `astroworldRay` needs no libraries beyond the C++ standard library (it uses `std::thread`).
 
 `ffmpeg` is only used to encode videos and convert screenshots: every pixel is drawn by our own code.
 
@@ -57,6 +66,7 @@ cmake --build build
 ./build/astroworld          # write every still image as a PPM file
 ./build/astroworldWindow    # play the software-rendered animation live in a window
 ./build/astroworldGl        # CP3: the 3D park in OpenGL
+./build/astroworldRay       # final: ray trace the 3D park (add --mode path for path tracing)
 ./tools/makeVideo.sh        # render the 30 s animation loop to output/astroworldAnimation.mp4
 ./tools/makeVideo.sh 30 30 opengl   # ...or the OpenGL version to output/astroworldAnimationGl.mp4
 ```
@@ -64,7 +74,9 @@ cmake --build build
 ### Without CMake (single command)
 
 ```bash
-g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
+# Software renderer only (the other programs need CMake's dependency detection):
+g++ -std=c++17 -O2 -Wall -Wextra -Isrc src/main.cpp $(find src -name '*.cpp' ! -name '*Main.cpp' ! -name main.cpp \
+    ! -path 'src/gl*' ! -path 'src/park3d/*' ! -path 'src/mesh/*' ! -path 'src/raytrace/*') -o build/astroworld
 ```
 
 ### OpenGL park (`astroworldGl`, Checkpoint 3 and prototype)
@@ -100,6 +112,35 @@ Command-line options:
 - `--software` forces Mesa's CPU rasterizer instead of the GPU.
 
 **GPU selection under WSL:** by default Mesa renders OpenGL on the CPU (`llvmpipe`). WSL's `d3d12` driver forwards OpenGL to the real GPU through `/dev/dxg`, so the program selects it automatically when that device exists (it sets `GALLIUM_DRIVER=d3d12` unless you have set it yourself).
+
+### Ray tracer (`astroworldRay`, final)
+
+| Whitted ray tracing, day | Whitted ray tracing, night |
+|---|---|
+| ![Whitted day](docs/screenshots/rayTracedDay.png) | ![Whitted night](docs/screenshots/rayTracedNight.png) |
+| **Path tracing (global illumination), day** | **Path tracing, night** |
+| ![Path traced day](docs/screenshots/pathTracedDay.png) | ![Path traced night](docs/screenshots/pathTracedNight.png) |
+
+```bash
+./build/astroworldRay                                  # Whitted, 9 samples/pixel, day   (~7 s)
+./build/astroworldRay --time 18                        # ...at night
+./build/astroworldRay --mode path --samples 128        # path traced with global illumination (~3 min)
+./build/astroworldRay --camera 1 --projection 1        # any viewpoint and projection from the OpenGL viewer
+```
+
+Options:
+- `--mode whitted|path`, `--samples n` (per pixel), `--depth n` (reflection depth / bounces)
+- `--width`, `--height`, `--time`, `--camera`, `--projection`
+- `--threads`, `--no-logo`, `--output file.ppm`
+
+It prints triangle count, BVH build time, render time and rays per second. Measured on this machine (12 threads, 1280×720, 91,721 triangles, BVH built in 0.25–0.3 s):
+
+| Image | Samples/pixel | Rays | Render time |
+|---|---|---|---|
+| Whitted, day | 16 | 37.9 M | 11.7 s |
+| Whitted, night | 16 | 37.9 M | 10.9 s |
+| Path traced, day | 128 | 411 M | 172 s |
+| Path traced, night | 128 | 407 M | 157 s |
 
 ### Live window (software renderer)
 
@@ -162,6 +203,10 @@ src/
 ├── main.cpp                    Command-line renderer: stills, or animation frames (--animate)
 ├── windowMain.cpp              Live SDL2 player for the animation (display stage only)
 ├── glMain.cpp                  CP3: GLFW window + OpenGL context, interactive 3D park
+├── rayMain.cpp                 Final: command-line ray tracer / path tracer
+├── raytrace/
+│   ├── rayGeometry.h/.cpp      World-space triangles from a ParkFrame, BVH, Moller-Trumbore intersection
+│   └── rayTracer.h/.cpp        Whitted + path tracing, shadow rays, reflections, sky model, supersampling, threads
 ├── gl/
 │   ├── glFunctions.h/.cpp      Our own OpenGL 3.3 core function loader (what GLAD does)
 │   └── glResources.h/.cpp      RAII wrappers: shader programs, GPU meshes, textures, MSAA render target
@@ -171,7 +216,8 @@ src/
 ├── park3d/                     The 3D park, independent of any graphics API
 │   ├── parkScene.h/.cpp        Scene description: instances (mesh + model matrix + material) and lighting at time t
 │   ├── headModel.h/.cpp        The head in 3D: features wrapped onto an ellipsoid, dread tubes, portal
-│   ├── parkModels.h/.cpp       3D rides, props and searchlight beams
+│   ├── parkModels.h/.cpp       3D rides, props, mirror ball and searchlight beams
+│   ├── parkTextures.h/.cpp     Ground and sign textures (drawn by the software renderer) + bilinear sampling
 │   └── orbitCamera.h           Orbit camera; perspective, isometric, oblique and multiview projections; presets
 ├── glScene/                    The OpenGL renderer
 │   ├── shaders.h               GLSL: Phong model shared by flat/Gouraud/Phong shading, sky, beams, overlays
@@ -340,6 +386,19 @@ docs/references/                Reference artwork the scene is matched against (
 | Physically based motion | Coaster: constant-speed chain lift, then speed from energy conservation `v = √(v₀² + 2g·Δh)`, integrated along the spline by arc length |
 | Procedural motion | Sine oscillators for swinging gondolas, bobbing horses, breathing head, swaying dreads, balloons and bunting, twinkling stars and sweeping searchlights |
 | Walk cycle | Visitors' legs swing about the hip in opposite phase, with a bounce on each step |
+
+### Ray tracing, path tracing and anti-aliasing (final)
+| Concept | Implementation |
+|---|---|
+| **Ray casting** | [rayTracer.cpp](src/raytrace/rayTracer.cpp): each pixel is *unprojected* through the inverse view-projection matrix to get its ray, so every projection works (parallel rays for orthographic views) |
+| Ray-triangle intersection | Möller–Trumbore: solve origin + t·d = P₀ + u·E₁ + v·E₂ with Cramer's rule; the barycentric (u, v) interpolate normals, colours and texture coordinates |
+| Acceleration structure | [rayGeometry.cpp](src/raytrace/rayGeometry.cpp): a **BVH** (bounding volume hierarchy) with median splits; slab tests let a ray skip whole subtrees, so ~92 000 triangles cost only a handful of tests per ray |
+| **Whitted ray tracing** | Shadow rays to the sun and the portal light give hard shadows; recursive mirror rays reflect the park in the chrome ball, the rocket, the coaster and (subtly) the brass head |
+| **Path tracing / global illumination** | Monte-Carlo solution of the rendering equation: cosine-weighted diffuse bounces, mirror bounces chosen with probability = reflectivity, next-event estimation (explicit shadow rays) for the sun and portal, emissive bulbs and doorway as area lights, sky light from bounced rays, and Russian roulette to end paths without bias |
+| **Anti-aliasing (supersampling)** | Each pixel averages several **stratified, jittered** samples (a grid with one random point per cell), smoothing edges and texture detail |
+| Tone mapping | Path-traced radiance above 1.0 is compressed with extended Reinhard instead of being clipped |
+| Parallelism on the CPU | Rows are handed out to all hardware threads through an atomic counter (dynamic load balancing) |
+| Same scene as OpenGL | The tracer flattens the same `ParkFrame` instances; line meshes become thin tubes, and the sky shader is ported to C++ |
 
 ### Rendering techniques
 | Concept | Implementation |
@@ -530,3 +589,52 @@ Projections, left to right and top to bottom: isometric, cavalier, cabinet, top 
 One-, two- and three-point perspective:
 
 ![Perspective vanishing points](docs/screenshots/perspectivePoints.png)
+
+### Checkpoint 4 – Final demonstration
+
+#### Final demonstration (suggested 5-minute walkthrough)
+1. **Software renderer (CP1/CP2):** `./build/astroworldWindow`. Press `3` (algorithm showcase), `4` (colour), `7` (transformations), then `1`/`2` and let the day → night animation play. Mention that every pixel comes from our own DDA, Bresenham, midpoint, scan-line and boundary-fill code.
+2. **OpenGL park (CP3/prototype):** `./build/astroworldGl`.
+   - Drag to orbit; press `C` for the viewpoints, including one-, two- and three-point perspective.
+   - Press `V` through the projections: isometric, cavalier, cabinet, top, front.
+   - Press `G` for flat, Gouraud and Phong shading, and `F` for the wireframe.
+   - Press `T`/`M` for texturing and mipmaps (look at the far plaza).
+   - Press `R` to ride the coaster, and `2` to jump to night with the searchlights.
+3. **Ray tracer (final):** show the pre-rendered Whitted and path-traced stills (above). Point out the hard shadows, the reflections in the mirror ball, and the soft global illumination. Run `./build/astroworldRay --width 640 --height 360` live: it takes a few seconds and prints its BVH and rays-per-second statistics.
+4. **CPU vs GPU:**
+   - CP2 software renderer: ~15–20 fps.
+   - OpenGL on the GPU: ~75–85 fps.
+   - The same OpenGL on Mesa's CPU rasterizer: ~14 fps.
+   - The ray tracer: seconds to minutes per frame, because every pixel traces many rays.
+
+#### What works
+- **All course topics are implemented and visible.** The [concept tables](#course-concepts--where-they-live-in-the-code) map each one to its code:
+  - raster vs vector, frame buffers, colour models, 8-bit reduction
+  - DDA, Bresenham, midpoint circle and ellipse, line clipping
+  - Bézier curves and splines
+  - scan-line and boundary fill
+  - 2D/3D homogeneous transforms
+  - every parallel and perspective projection
+  - the Phong model with flat, Gouraud and Phong shading
+  - texture mapping with mipmaps
+  - ray tracing, path tracing (global illumination) and anti-aliasing (SSAA, MSAA)
+- **Three renderers, one park.** The 2D renderer and the 3D renderers share the palette, curves, matrices and animation timeline. OpenGL and the ray tracer draw the identical `ParkScene`.
+- **Animation:** a 30 s loop (day → dusk → night → dawn) with a transformation-hierarchy Ferris wheel, a physics-timed coaster, keyframed drop tower, 3D carousel, breathing head with swaying dreads, walking visitors, drifting clouds and twinkling stars.
+- **Interaction:** orbit, zoom and pan camera; seven viewpoints; six projections; three shading modes; wireframe, texture and mipmap toggles; the coaster ride; playback control; screenshots.
+- **Output:** PPM stills, MP4 videos from either real-time renderer (`tools/makeVideo.sh`), and ray-traced stills. Every mode can also be driven from the command line, which is how all the screenshots in this README were made.
+
+#### What doesn't (known limitations)
+- **3D head detail:** the nose, lips and eyelids are smooth ellipsoids placed on the face, so close-ups look "blobby"; the 2D head is closer to the reference. The mouth is a glowing panel, not a real opening.
+- **No shadows in real time:** the OpenGL renderer has no shadow mapping, so shadows appear only in the ray tracer.
+- **The ray tracer is offline:** a Whitted frame takes seconds, a clean path-traced frame minutes. It uses double precision, a median-split BVH and no SIMD, and there is no denoiser (low sample counts look grainy).
+- **Effects that exist only in OpenGL:** the searchlight beams (the ray tracer has no volumetric light).
+- **Text:** captions use the 5×7 bitmap font, not the serif lettering of the reference postcard.
+- **Fine lines:** OpenGL core profile draws lines 1 pixel wide, so the coaster lattice thins out at a distance.
+- **Platform:** developed and tested on WSL2 (Ubuntu 24.04) with Mesa. GPU acceleration under WSL relies on the `d3d12` driver, which the program selects automatically. Native Windows/macOS builds were not tested.
+
+#### Final changes / recommendations
+- **Shadow mapping** in OpenGL (render depth from the sun, compare in the fragment shader), so real-time shadows match the ray tracer.
+- **A faster ray tracer:** surface-area-heuristic BVH, single-precision SIMD ray packets, a denoiser for path tracing, and progressive rendering inside the OpenGL window.
+- **A sculpted head mesh** (or a loaded model) with a real mouth opening, and textured skin detail.
+- **Physically based materials** (metallic/roughness) shared by both 3D renderers, and HDR with tone mapping in OpenGL too.
+- **Sound and presentation polish:** music on the timeline, a title sequence using the CP1 wordmark, and an on-screen ride counter.

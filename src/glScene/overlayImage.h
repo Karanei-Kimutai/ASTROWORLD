@@ -28,3 +28,6 @@ struct RgbaImage {
 };
 
 RgbaImage renderOverlayImage(int width, int height, const std::function<void(FrameBuffer&)>& draw);
+
+/** @brief A fully opaque RGBA copy of a frame buffer (for textures that need no transparency). */
+RgbaImage toOpaqueRgba(const FrameBuffer& image);

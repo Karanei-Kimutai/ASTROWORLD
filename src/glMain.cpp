@@ -33,7 +33,9 @@
 #include <filesystem>
 #include <iostream>
 #include <string>
-#include <unistd.h>
+#ifdef __linux__
+#include <unistd.h>  // access(): detect WSL's GPU device
+#endif
 #include <vector>
 
 #include "animation/astroworldTimeline.h"
@@ -321,9 +323,13 @@ int main(int argumentCount, char** argumentValues) {
 
     // Under WSL, Mesa defaults to its CPU rasterizer (llvmpipe). The d3d12 driver
     // forwards OpenGL to the real GPU through /dev/dxg, so prefer it when present.
+#ifdef __linux__
     if (!useSoftwareGl && std::getenv("GALLIUM_DRIVER") == nullptr && access("/dev/dxg", F_OK) == 0) {
         setenv("GALLIUM_DRIVER", "d3d12", 0);
     }
+#else
+    (void)useSoftwareGl;  // only meaningful under Mesa on Linux/WSL
+#endif
 
     if (!glfwInit()) {
         std::cerr << "glfwInit failed\n";

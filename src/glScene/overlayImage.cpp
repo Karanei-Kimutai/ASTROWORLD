@@ -33,3 +33,17 @@ RgbaImage renderOverlayImage(int width, int height, const std::function<void(Fra
     }
     return image;
 }
+
+RgbaImage toOpaqueRgba(const FrameBuffer& image) {
+    RgbaImage result;
+    result.width = image.getWidth();
+    result.height = image.getHeight();
+    result.pixels.reserve(static_cast<std::size_t>(result.width) * result.height * 4);
+    for (int y = 0; y < result.height; ++y) {
+        for (int x = 0; x < result.width; ++x) {
+            const Color color = image.getPixel(x, y);
+            result.pixels.insert(result.pixels.end(), {color.r, color.g, color.b, 255});
+        }
+    }
+    return result;
+}

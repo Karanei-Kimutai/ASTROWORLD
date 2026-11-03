@@ -16,10 +16,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "core/simpleRandom.h"
 #include "glScene/shaders.h"
 #include "mesh/meshBuilder.h"
-#include "raster/circles.h"
+#include "park3d/parkTextures.h"
 #include "text/astroWordmark.h"
 #include "text/bitmapFont.h"
 
@@ -29,33 +28,6 @@ namespace {
 void drawShadowedText(FrameBuffer& frameBuffer, const std::string& text, int left, int top, int scale) {
     drawBitmapText(frameBuffer, text, left + 2, top + 2, scale, astroPalette::black);
     drawBitmapText(frameBuffer, text, left, top, scale, astroPalette::white);
-}
-
-/**
- * @brief One 4 x 4 m concrete slab, drawn by the CP1 software renderer: speckled
- *        concrete, darker expansion joints along its edges (so tiles line up into
- *        a slab grid) and scattered popcorn, as on the album cover's plaza.
- */
-void drawGroundTile(FrameBuffer& canvas) {
-    const int size = canvas.getWidth();
-    SimpleRandom random(57u);
-    for (int y = 0; y < size; ++y) {
-        for (int x = 0; x < size; ++x) {
-            const double speckle = random.nextRange(-0.06, 0.06);
-            canvas.setPixel(x, y, scaleColor(astroPalette::dayGroundNear, 1.0 + speckle));
-        }
-    }
-    const Color joint = makeShade(astroPalette::dayGroundNear, 0.3);
-    for (int edge = 0; edge < 4; ++edge) {
-        canvas.fillSpan(edge, 0, size - 1, joint);
-        for (int y = 0; y < size; ++y) canvas.setPixel(edge, y, joint);
-    }
-    for (int kernel = 0; kernel < 90; ++kernel) {
-        const int x = random.nextInt(8, size - 8);
-        const int y = random.nextInt(8, size - 8);
-        fillCircle(canvas, x, y, random.nextInt(2, 4), Color{255, 248, 220});
-        canvas.setPixel(x - 1, y - 1, astroPalette::white);
-    }
 }
 
 }  // namespace
@@ -75,12 +47,9 @@ bool AstroworldPark::initialise(const ParkScene& scene, std::string& errorOut) {
     overlayQuad.upload(makeTexturedQuad(2.0, 2.0, astroPalette::white));
 
     // ---- Textures drawn by the CP1/CP2 software renderer ------------------------------
-    uploadImage(signTexture, renderOverlayImage(590, 115, [](FrameBuffer& canvas) {
-                    canvas.clear(Color{232, 236, 244});
-                    drawBitmapText(canvas, "ASTROWORLD", (590 - measureBitmapText("ASTROWORLD", 9)) / 2, (115 - 63) / 2, 9, Color{36, 40, 64});
-                }));
+    uploadImage(signTexture, toOpaqueRgba(drawSignTexture()));
     // The ground tile REPEATS across the plaza and is MIPMAPPED for distant slabs.
-    uploadImage(groundTexture, renderOverlayImage(256, 256, drawGroundTile), true, true);
+    uploadImage(groundTexture, toOpaqueRgba(drawGroundTexture()), true, true);
     WordmarkStyle style;
     style.letterHeight = 66.0;
     const int logoWidth = static_cast<int>(measureWordmark(style)) + 24;

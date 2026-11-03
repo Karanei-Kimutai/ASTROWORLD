@@ -54,6 +54,11 @@ MeshData buildPersonTorso();                    // torso + head, feet at origin,
 MeshData buildPersonLeg();                      // hangs down from its origin (the hip)
 MeshData buildBalloon();
 
+/** @brief A chrome sphere sculpture on a plinth - shows off mirror reflections in the ray tracer. */
+inline constexpr double mirrorBallRadius = 1.3;
+MeshData buildMirrorBallPlinth();
+MeshData buildMirrorBall();            // sphere centred on its origin
+
 // ---- Night effects ----------------------------------------------------------------
 inline constexpr double searchlightBeamLength = 70.0;
 /**

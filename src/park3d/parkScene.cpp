@@ -28,6 +28,7 @@ const Vec3 rocketPosition{-6.5, 0.0, 3.5};
 const Vec3 bigTopPosition{-14.0, 0.0, -13.5};
 const Vec3 signPosition{-21.0, 0.0, -11.0};
 const Vec3 vendorPosition{-9.5, 0.0, 8.5};
+const Vec3 mirrorBallPosition{4.2, 0.0, 9.5};
 const Vec3 searchlightPositions[2] = {{-6.0, 0.0, -24.0}, {7.0, 0.0, -26.0}};
 const double fenceZ = -9.5;
 
@@ -80,6 +81,8 @@ ParkScene::ParkScene() {
     set(MeshId::personLeg, buildPersonLeg());
     set(MeshId::balloon, buildBalloon());
     set(MeshId::searchlightBeam, buildSearchlightBeam());
+    set(MeshId::mirrorBallPlinth, buildMirrorBallPlinth());
+    set(MeshId::mirrorBall, buildMirrorBall());
 
     // Arc length along the coaster, for placing cars by distance.
     coasterCumulativeLength.assign(coasterPath.size(), 0.0);
@@ -175,6 +178,10 @@ void ParkScene::addRides(std::vector<Instance>& instances, double time, double n
     add(MeshId::signFace, Matrix4::translation(signPosition), signFace);
     add(MeshId::buntingFlags, Matrix4::identity(), material(white));
     add(MeshId::buntingStrings, Matrix4::identity(), material(white, 1.0));
+    // Chrome sculpture: almost a perfect mirror (reflectivity 0.9) with a tight highlight.
+    add(MeshId::mirrorBallPlinth, Matrix4::translation(mirrorBallPosition), material(white, 0.0, 0.3, 24.0));
+    add(MeshId::mirrorBall, Matrix4::translation(mirrorBallPosition + Vec3(0, 0.9 + mirrorBallRadius, 0)),
+        material(Color{200, 205, 215}, 0.0, 1.0, 120.0, 0.9));
 
     // ---- The head: inflatable breathing = scaling about its base (the local origin) ----
     const double breathing = 1.0 + oscillate(time, 0.25, 0.012);
