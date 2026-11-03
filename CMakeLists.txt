@@ -91,9 +91,10 @@ if(glfw3_FOUND)
         src/gl/glResources.cpp
         src/mesh/meshBuilder.cpp
         src/glScene/overlayImage.cpp
-        src/glScene/headModel.cpp
-        src/glScene/parkModels.cpp
         src/glScene/astroworldPark.cpp
+        src/park3d/headModel.cpp
+        src/park3d/parkModels.cpp
+        src/park3d/parkScene.cpp
     )
     target_link_libraries(astroworldGl PRIVATE astroworldCore glfw ${CMAKE_DL_LIBS})
 else()

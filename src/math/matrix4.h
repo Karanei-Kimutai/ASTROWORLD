@@ -37,6 +37,19 @@ public:
     static Matrix4 orthographic(double left, double right, double bottom, double top, double nearPlane, double farPlane);
 
     /**
+     * @brief OBLIQUE parallel projection's shear, applied in view space before an
+     *        orthographic projection: points further away (more negative z) are
+     *        shifted by depth * receding * (cos angle, sin angle).
+     *
+     * Projectors are parallel but NOT perpendicular to the view plane, so the front
+     * face keeps its true shape while depth shows as receding diagonal lines.
+     *   receding = 1   -> CAVALIER (depth drawn at full length)
+     *   receding = 0.5 -> CABINET  (depth halved, looks more natural)
+     * @param referenceDepth View-space z of the plane that stays undistorted.
+     */
+    static Matrix4 obliqueShear(double receding, double angleRadians, double referenceDepth);
+
+    /**
      * @brief Perspective projection with vertical field of view fovYRadians (OpenGL convention).
      *        The camera looks down -z; the centre of projection is the origin.
      */

@@ -210,11 +210,12 @@ MeshData makeCylinderBetween(const Vec3& start, const Vec3& end, double radius, 
     return mesh;
 }
 
-MeshData makeGroundPlane(double width, double depth, Color color) {
+MeshData makeGroundPlane(double width, double depth, Color color, double textureRepeats) {
     MeshData mesh;
     const Vec3 up{0.0, 1.0, 0.0};
-    mesh.vertices = {makeVertex({-width / 2, 0, -depth / 2}, up, color, 0, 0), makeVertex({width / 2, 0, -depth / 2}, up, color, 1, 0),
-                     makeVertex({width / 2, 0, depth / 2}, up, color, 1, 1), makeVertex({-width / 2, 0, depth / 2}, up, color, 0, 1)};
+    const double r = textureRepeats;
+    mesh.vertices = {makeVertex({-width / 2, 0, -depth / 2}, up, color, 0, 0), makeVertex({width / 2, 0, -depth / 2}, up, color, r, 0),
+                     makeVertex({width / 2, 0, depth / 2}, up, color, r, r), makeVertex({-width / 2, 0, depth / 2}, up, color, 0, r)};
     mesh.addTriangle(0, 2, 1);
     mesh.addTriangle(0, 3, 2);
     return mesh;

@@ -53,8 +53,11 @@ MeshData makeTube(const std::vector<Vec3>& path, double startRadius, double endR
 /** @brief Cylinder between two arbitrary points (spokes, legs, supports). */
 MeshData makeCylinderBetween(const Vec3& start, const Vec3& end, double radius, int segments, Color color);
 
-/** @brief Flat rectangle in the xz-plane facing +y (the ground). */
-MeshData makeGroundPlane(double width, double depth, Color color);
+/**
+ * @brief Flat rectangle in the xz-plane facing +y (the ground).
+ * @param textureRepeats How many times a texture tiles across it (texture coordinates run 0..repeats).
+ */
+MeshData makeGroundPlane(double width, double depth, Color color, double textureRepeats = 1.0);
 
 /** @brief Flat rectangle in the xy-plane facing +z with texture coordinates 0..1 (signs, labels). */
 MeshData makeTexturedQuad(double width, double height, Color color);

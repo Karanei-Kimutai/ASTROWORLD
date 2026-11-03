@@ -2,7 +2,7 @@
  * @file parkModels.cpp
  * @brief Procedural 3D models of the rides and props.
  */
-#include "glScene/parkModels.h"
+#include "park3d/parkModels.h"
 
 #include <algorithm>
 #include <cmath>
@@ -395,4 +395,23 @@ MeshData buildBalloon() {
     MeshData balloon = makeEllipsoid({0.3, 0.36, 0.3}, 18, 12, astroPalette::white);
     balloon.append(makeCone(0.06, 0.1, 8, astroPalette::white), Matrix4::translation({0, -0.44, 0}));
     return balloon;
+}
+
+MeshData buildSearchlightBeam() {
+    MeshData beam;
+    const int segments = 24;
+    const double endRadius = 5.0;
+    for (int segment = 0; segment <= segments; ++segment) {
+        const double angle = 2.0 * pi * segment / segments;
+        const Vec3 outward{std::cos(angle), 0.0, -std::sin(angle)};
+        const double u = static_cast<double>(segment) / segments;
+        beam.vertices.push_back(makeVertex({0.0, 0.0, 0.0}, outward, astroPalette::white, u, 0.0));
+        beam.vertices.push_back(makeVertex(outward * endRadius + Vec3(0.0, searchlightBeamLength, 0.0), outward, astroPalette::white, u, 1.0));
+    }
+    for (std::uint32_t segment = 0; segment < static_cast<std::uint32_t>(segments); ++segment) {
+        const std::uint32_t first = segment * 2;
+        beam.addTriangle(first, first + 2, first + 3);
+        beam.addTriangle(first, first + 3, first + 1);
+    }
+    return beam;
 }

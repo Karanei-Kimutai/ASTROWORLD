@@ -85,8 +85,17 @@ public:
     Texture2D(const Texture2D&) = delete;
     Texture2D& operator=(const Texture2D&) = delete;
 
-    /** @brief Upload width x height RGBA bytes, top row first. */
-    void upload(int width, int height, const std::uint8_t* rgbaPixels);
+    /**
+     * @brief Upload width x height RGBA bytes, top row first.
+     * @param repeat     Tile the texture (GL_REPEAT) instead of clamping at its edges.
+     * @param mipmapped  Also build the MIPMAP chain: half-size, quarter-size, ... copies,
+     *                   so distant (minified) surfaces sample a pre-filtered image
+     *                   instead of aliasing (shimmering moire patterns).
+     */
+    void upload(int width, int height, const std::uint8_t* rgbaPixels, bool repeat = false, bool mipmapped = false);
+
+    /** @brief Switch between trilinear mipmap filtering and plain nearest sampling (to show aliasing). */
+    void setMipmapFiltering(bool enabled);
 
     void bind(int textureUnit) const;
     bool isValid() const { return textureId != 0; }
@@ -97,6 +106,7 @@ private:
     GLuint textureId = 0;
     int width = 0;
     int height = 0;
+    bool hasMipmaps = false;
 };
 
 /**

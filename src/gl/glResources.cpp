@@ -158,18 +158,28 @@ Texture2D::~Texture2D() {
     if (textureId != 0) glDeleteTextures(1, &textureId);
 }
 
-void Texture2D::upload(int widthValue, int heightValue, const std::uint8_t* rgbaPixels) {
+void Texture2D::upload(int widthValue, int heightValue, const std::uint8_t* rgbaPixels, bool repeat, bool mipmapped) {
     if (textureId == 0) glGenTextures(1, &textureId);
     width = widthValue;
     height = heightValue;
+    hasMipmaps = mipmapped;
     glBindTexture(GL_TEXTURE_2D, textureId);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgbaPixels);
-    // Bilinear filtering when the texture is scaled; clamp so edges do not wrap around.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    const GLint wrap = repeat ? GL_REPEAT : GL_CLAMP_TO_EDGE;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    if (mipmapped) glGenerateMipmap(GL_TEXTURE_2D);
+    setMipmapFiltering(mipmapped);
+}
+
+void Texture2D::setMipmapFiltering(bool enabled) {
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    // Trilinear: blend the two nearest mip levels, each sampled bilinearly. Without
+    // mipmaps a minified texture is point-sampled and distant detail aliases.
+    const GLint minFilter = enabled && hasMipmaps ? GL_LINEAR_MIPMAP_LINEAR : (hasMipmaps ? GL_NEAREST : GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
 }
 
 void Texture2D::bind(int textureUnit) const {

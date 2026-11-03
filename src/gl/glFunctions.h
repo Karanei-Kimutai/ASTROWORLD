@@ -39,6 +39,7 @@
     X(PFNGLBLENDFUNCPROC, glBlendFunc)                                     \
     X(PFNGLCULLFACEPROC, glCullFace)                                       \
     X(PFNGLLINEWIDTHPROC, glLineWidth)                                     \
+    X(PFNGLPOLYGONMODEPROC, glPolygonMode)                                 \
     X(PFNGLGETSTRINGPROC, glGetString)                                     \
     X(PFNGLGETERRORPROC, glGetError)                                       \
     X(PFNGLGETINTEGERVPROC, glGetIntegerv)                                 \
@@ -82,6 +83,7 @@
     X(PFNGLTEXPARAMETERIPROC, glTexParameteri)                             \
     X(PFNGLACTIVETEXTUREPROC, glActiveTexture)                             \
     X(PFNGLDELETETEXTURESPROC, glDeleteTextures)                           \
+    X(PFNGLGENERATEMIPMAPPROC, glGenerateMipmap)                           \
     /* off-screen frame buffers */                                         \
     X(PFNGLGENFRAMEBUFFERSPROC, glGenFramebuffers)                         \
     X(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer)                         \
@@ -110,6 +112,7 @@ ASTRO_GL_FUNCTIONS(ASTRO_GL_DECLARE)
 #define glBlendFunc astroGl_glBlendFunc
 #define glCullFace astroGl_glCullFace
 #define glLineWidth astroGl_glLineWidth
+#define glPolygonMode astroGl_glPolygonMode
 #define glGetString astroGl_glGetString
 #define glGetError astroGl_glGetError
 #define glGetIntegerv astroGl_glGetIntegerv
@@ -150,6 +153,7 @@ ASTRO_GL_FUNCTIONS(ASTRO_GL_DECLARE)
 #define glTexParameteri astroGl_glTexParameteri
 #define glActiveTexture astroGl_glActiveTexture
 #define glDeleteTextures astroGl_glDeleteTextures
+#define glGenerateMipmap astroGl_glGenerateMipmap
 #define glGenFramebuffers astroGl_glGenFramebuffers
 #define glBindFramebuffer astroGl_glBindFramebuffer
 #define glDeleteFramebuffers astroGl_glDeleteFramebuffers

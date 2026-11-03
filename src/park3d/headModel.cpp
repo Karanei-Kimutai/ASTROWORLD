@@ -2,7 +2,7 @@
  * @file headModel.cpp
  * @brief Procedural 3D head.
  */
-#include "glScene/headModel.h"
+#include "park3d/headModel.h"
 
 #include <algorithm>
 #include <cmath>

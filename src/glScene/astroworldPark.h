@@ -1,21 +1,35 @@
 /**
  * @file astroworldPark.h
- * @brief The OpenGL ASTROWORLD park: owns every GPU resource and draws one frame at a given time.
+ * @brief The OpenGL renderer for the park: uploads the ParkScene's meshes once,
+ *        then draws any ParkFrame with the chosen camera and shading options.
  */
 #pragma once
 
+#include <array>
 #include <string>
-#include <vector>
 
 #include "gl/glResources.h"
-#include "glScene/orbitCamera.h"
 #include "glScene/overlayImage.h"
+#include "park3d/orbitCamera.h"
+#include "park3d/parkScene.h"
 
-/** @brief Everything that decides what one OpenGL frame looks like. */
-struct ParkFrameSettings {
-    double timeSeconds = 0.0;
-    double nightAmount = 0.0;
-    OrbitCamera camera;
+/** @brief Surface shading interpolation, switchable at run time to compare them. */
+enum class ShadingMode { flat = 0, gouraud = 1, phong = 2 };
+
+inline const char* shadingModeName(ShadingMode mode) {
+    switch (mode) {
+        case ShadingMode::flat: return "FLAT";
+        case ShadingMode::gouraud: return "GOURAUD";
+        default: return "PHONG";
+    }
+}
+
+/** @brief Display options that do not change the scene itself. */
+struct RenderOptions {
+    ShadingMode shading = ShadingMode::phong;
+    bool wireframe = false;     // draw triangle edges only, to show the tessellation
+    bool textures = true;       // texture mapping on / off
+    bool mipmapping = true;     // trilinear mipmaps on / off (off shows texture aliasing)
     bool showLogo = true;
 };
 
@@ -25,46 +39,31 @@ public:
     static constexpr int renderWidth = 1280;
     static constexpr int renderHeight = 720;
 
-    /** @brief Compile shaders, build and upload every mesh and texture. Needs a current GL context. */
-    bool initialise(std::string& errorOut);
+    /** @brief Compile shaders, upload every mesh and texture. Needs a current GL context. */
+    bool initialise(const ParkScene& scene, std::string& errorOut);
 
-    /** @brief Draw the whole park into the currently bound frame buffer. */
-    void render(const ParkFrameSettings& settings);
+    /** @brief Draw one frame into the currently bound frame buffer. */
+    void render(const ParkFrame& frame, const CameraMatrices& camera, const RenderOptions& options);
 
     /** @brief Draw a texture as a screen overlay with its top-left at (left, top) in pixels. */
     void drawOverlay(const Texture2D& texture, int left, int top);
 
     /** @brief Upload a software-rendered RGBA image into a texture. */
-    static void uploadImage(Texture2D& texture, const RgbaImage& image) {
-        texture.upload(image.width, image.height, image.pixels.data());
+    static void uploadImage(Texture2D& texture, const RgbaImage& image, bool repeat = false, bool mipmapped = false) {
+        texture.upload(image.width, image.height, image.pixels.data(), repeat, mipmapped);
     }
 
 private:
-    void drawLit(const GpuMesh& mesh, const Matrix4& model, Color tint = astroPalette::white, double emissive = 0.0,
-                 double specularStrength = 0.25, double shininess = 24.0);
-    void setLighting(const ParkFrameSettings& settings, const Matrix4& view, const Matrix4& projection);
-    void drawSky(const ParkFrameSettings& settings, const Matrix4& view, const Matrix4& projection);
-    void drawRides(double time);
-    void drawHead(double time, double night);
-    void drawPeople(double time);
+    void drawSky(const ParkFrame& frame, const CameraMatrices& camera);
+    void setLighting(const SceneLighting& lighting, const CameraMatrices& camera, const RenderOptions& options);
 
     ShaderProgram litShader;
     ShaderProgram skyShader;
+    ShaderProgram beamShader;
     ShaderProgram overlayShader;
     GLuint emptyVertexArray = 0;  // core profile needs a VAO bound even for the attribute-less sky triangle
 
-    GpuMesh ground, fence;
-    GpuMesh head, portal, dreads;
-    GpuMesh ferrisStand, ferrisRotor, ferrisBulbs, gondola;
-    GpuMesh coasterTrack, coasterTruss, coasterCar;
-    GpuMesh dropColumn, dropLights, dropSeats;
-    GpuMesh carouselBase, carouselRotor, carouselBulbs, horse;
-    GpuMesh rocket, bigTop, signFrame, signFace, buntingFlags, buntingStrings;
-    GpuMesh personTorso, personLeg, balloon, balloonStrings;
+    std::array<GpuMesh, meshIdCount> meshes;
     GpuMesh overlayQuad;
-
-    Texture2D signTexture, logoTexture, footerTexture;
-
-    std::vector<Vec3> coasterPath;
-    std::vector<double> coasterCumulativeLength;
+    Texture2D signTexture, groundTexture, logoTexture, footerTexture;
 };

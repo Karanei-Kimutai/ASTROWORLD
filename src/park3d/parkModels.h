@@ -53,3 +53,12 @@ MeshData buildBuntingStrings();                 // GL_LINES
 MeshData buildPersonTorso();                    // torso + head, feet at origin, facing +z
 MeshData buildPersonLeg();                      // hangs down from its origin (the hip)
 MeshData buildBalloon();
+
+// ---- Night effects ----------------------------------------------------------------
+inline constexpr double searchlightBeamLength = 70.0;
+/**
+ * @brief An open cone pointing up +y from its apex at the origin. Texture
+ *        coordinate v runs 0 at the lamp to 1 at the far end, so the beam
+ *        shader can fade the light along its length.
+ */
+MeshData buildSearchlightBeam();

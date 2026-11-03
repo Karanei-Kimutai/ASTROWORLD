@@ -36,7 +36,7 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
-| `prototype` | Prototype | All components combined into one interactive park. |
+| `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
 | `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
 
 ---
@@ -67,7 +67,7 @@ cmake --build build
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
 ```
 
-### OpenGL park (`astroworldGl`, Checkpoint 3)
+### OpenGL park (`astroworldGl`, Checkpoint 3 and prototype)
 
 | Day | Night |
 |---|---|
@@ -78,7 +78,11 @@ g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astrow
 |---|---|
 | Mouse drag / scroll | Orbit the camera / zoom |
 | `W` `A` `S` `D` / `Q` `E` | Move the camera's target / up and down |
-| `C` | Cycle viewpoints: album cover, aerial, Ferris wheel, carousel |
+| `C` | Cycle viewpoints: album cover, aerial, Ferris wheel, carousel, one-, two- and three-point perspective |
+| `R` | Ride the roller coaster (first-person camera on the front car) |
+| `V` | Cycle projections: perspective, isometric, oblique cavalier, oblique cabinet, top view, front view |
+| `G` / `F` | Cycle shading (flat, Gouraud, Phong) / toggle wireframe |
+| `T` / `M` | Toggle texture mapping / mipmapping |
 | `O` | Toggle automatic orbit |
 | `Space`, `←` / `→`, `↑` / `↓` | Play / pause, seek ±1 s, speed ×2 / ÷2 |
 | `1` / `2` | Jump to day / night |
@@ -87,7 +91,8 @@ g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astrow
 | `Esc` | Quit |
 
 Command-line options:
-- `--camera <0-3>` picks the starting viewpoint.
+- `--camera <0-6>`, `--projection <0-5>` and `--shading <0-2>` pick the starting viewpoint, projection and shading.
+- `--ride`, `--wireframe`, `--no-logo`, `--no-textures` and `--no-mipmaps` match the keys above, so every mode can be captured from scripts.
 - `--time <s>` sets the starting time.
 - `--capture <file.ppm>` renders one frame off-screen and exits.
 - `--animate <seconds> <fps> <dir | ->` renders a frame sequence, exactly like the software renderer.
@@ -163,12 +168,14 @@ src/
 ├── mesh/
 │   ├── meshData.h              Vertex format (position, normal, colour, UV), indexed meshes, transformed append
 │   └── meshBuilder.h/.cpp      Box, cylinder, cone, ellipsoid, torus, swept tube, quads, lines
-├── glScene/
-│   ├── shaders.h               GLSL: Blinn-Phong + point light + fog, procedural sky, overlays
-│   ├── astroworldPark.h/.cpp   Builds the GPU scene and draws the animated park each frame
+├── park3d/                     The 3D park, independent of any graphics API
+│   ├── parkScene.h/.cpp        Scene description: instances (mesh + model matrix + material) and lighting at time t
 │   ├── headModel.h/.cpp        The head in 3D: features wrapped onto an ellipsoid, dread tubes, portal
-│   ├── parkModels.h/.cpp       3D rides and props
-│   ├── orbitCamera.h           Perspective orbit camera with viewpoint presets
+│   ├── parkModels.h/.cpp       3D rides, props and searchlight beams
+│   └── orbitCamera.h           Orbit camera; perspective, isometric, oblique and multiview projections; presets
+├── glScene/                    The OpenGL renderer
+│   ├── shaders.h               GLSL: Phong model shared by flat/Gouraud/Phong shading, sky, beams, overlays
+│   ├── astroworldPark.h/.cpp   Uploads the scene's meshes and textures; draws a ParkFrame
 │   └── overlayImage.h/.cpp     Software-rendered images → RGBA textures (difference matting)
 ├── core/
 │   ├── vec2.h                  2D vector maths, pi, rounding helper
@@ -281,8 +288,12 @@ docs/references/                Reference artwork the scene is matched against (
 ### Projections
 | Concept | Where it is used |
 |---|---|
-| Parallel (orthographic) | CP2 carousel horses (z dropped after the view rotation); the showcase cube uses `Matrix4::orthographic` |
-| **Perspective, centre of projection, frustum** | CP3: every frame uses `Matrix4::perspective` (45° vertical field of view, near 0.1, far 400) with the camera's eye as the centre of projection. The GPU clips triangles to the view frustum and divides by *w*, so the fence, coaster and plaza converge toward vanishing points. |
+| **Orthographic: multiview** | `V` → top view (true plan) and front view (true elevation): parallel projectors perpendicular to the view plane |
+| **Orthographic: axonometric / isometric** | `V` → isometric: the camera looks down the cube diagonal (elevation atan(1/√2) ≈ 35.26°, 45° around), so the x, y and z axes are equally foreshortened |
+| **Oblique: cavalier, cabinet** | `V` → `Matrix4::obliqueShear` shears depth onto a 45° diagonal before an orthographic projection: full depth (cavalier) or half depth (cabinet) |
+| **Perspective, centre of projection, frustum** | Default mode: `Matrix4::perspective` with the eye as the centre of projection; the GPU clips to the view frustum and divides by *w* |
+| **One-, two- and three-point perspective** | `C` presets: a level camera square to the fence (one vanishing point: only depth lines converge); turned 45° (two: both ground axes converge); tilted up at the drop tower (three: verticals converge too) |
+| CP2 parallel uses | Carousel horses (z dropped after the view rotation); the showcase cube uses `Matrix4::orthographic` |
 | Camera / view transform | `Matrix4::lookAt` builds the view matrix from the orbit camera's eye (spherical coordinates around a target) |
 | Viewport transform | NDC `[−1, 1]` → pixels: `glViewport` in OpenGL; done by hand in the transformation showcase |
 
@@ -294,13 +305,21 @@ docs/references/                Reference artwork the scene is matched against (
 | Vertex buffers | [glResources.cpp](src/gl/glResources.cpp): meshes go into VBOs/EBOs, described by a VAO (position, normal, colour, UV attributes) |
 | Hidden-surface removal | The **depth buffer** (z-buffer) replaces CP1/CP2's painter's algorithm |
 | **Lighting (Phong model)** | Blinn-Phong per fragment: ambient + diffuse + specular from the sun or moon, plus an attenuated **point light** in the mouth that lights the face and crowd at night |
-| Smooth shading | Per-vertex normals interpolated across triangles and lit per pixel (Phong shading); tube and ellipsoid normals are computed analytically |
+| **Shading interpolation: flat / Gouraud / Phong** | `G` switches live. **Flat**: one normal per triangle from the screen-space derivatives of the position (`cross(dFdx, dFdy)`), so facets show. **Gouraud**: the Phong model is evaluated per *vertex* in the vertex shader and the colours are interpolated, so highlights smear and can be missed. **Phong**: the *normal* is interpolated and lighting runs per pixel. All three share one GLSL lighting function. `F` shows the wireframe. |
 | Normal transformation | Normals use the inverse-transpose of the model matrix (in the shader, and in `MeshData::append`), so ellipsoid features stay correctly lit |
-| **Texture mapping** | The park sign's lettering is a texture with UV coordinates; the logo and captions are textured screen-space quads |
+| **Texture mapping** | The plaza uses a 4 m concrete slab with joints and popcorn, drawn by the software renderer and **tiled** 100× with `GL_REPEAT`. The park sign's lettering is a UV-mapped texture; the logo and captions are textured screen-space quads. `T` toggles texturing. |
+| **Mipmapping** | The ground texture has a full mip chain (`glGenerateMipmap`) with trilinear filtering. `M` switches to point sampling to show the shimmering aliasing on distant slabs that mipmaps remove. |
+| Transparency | Searchlight beams use **additive blending** with depth writes off, fading along their length |
 | **Anti-aliasing (MSAA)** | The scene renders into an off-screen 4× multisampled frame buffer object, resolved and then shown or read back |
 | Procedural sky | A full-screen triangle reconstructs each pixel's view ray with the inverse view-projection matrix, then adds a gradient, value-noise clouds and twinkling stars |
 | Fog | Exponential distance fog toward the horizon colour (aerial perspective) |
 | Frame buffer read-back | `glReadPixels` turns GPU frames back into our `FrameBuffer` for screenshots and video |
+
+### Scene description (prototype)
+| Concept | Implementation |
+|---|---|
+| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the final-phase ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
+| Camera paths | The coaster ride camera follows the spline: eye at the front car, looking a few metres ahead along the track, banked with the car's up vector |
 
 ### Reusing earlier work in CP3
 | From | Used in the OpenGL renderer for |
@@ -485,3 +504,29 @@ Frame buffer and raster vs. vector graphics, RGB/HSV/CMYK colour models, tints/s
 - **Head refinement:** a sculpted mesh instead of ellipsoid features for the nose and lips, and a real opening in the mouth.
 - **Ray-traced still:** chrome spheres and the brass head reflecting the park, rendered on the CPU (ray tracing and anti-aliasing topics).
 - **Polish and interaction:** ride on the coaster (first-person camera along the spline), click a ride to toggle it, and sound.
+
+### Prototype – all components combined
+
+**What the prototype adds**
+- **One scene, any renderer.** `ParkScene` describes the park at time *t* as instances plus lighting. It contains no graphics-API code, so the OpenGL renderer and the coming ray tracer draw the same park.
+- **Shading interpolation, live:** flat, Gouraud and Phong share one lighting function. A wireframe view shows the tessellation.
+- **Every projection in the syllabus:**
+  - perspective, isometric (axonometric)
+  - oblique cavalier and cabinet
+  - top and front multiview
+  - viewpoints set up for one-, two- and three-point perspective
+- **Texture mapping with mipmaps:** a tiled concrete-and-popcorn plaza drawn by the CP1 software renderer.
+- **Night atmosphere:** sweeping additive searchlight beams.
+- **Coaster ride:** first-person camera from the front car, using the physics-timed train position.
+
+| Flat · Gouraud / Phong · wireframe | Coaster ride |
+|---|---|
+| ![Shading modes](docs/screenshots/shadingModes.png) | ![Coaster ride](docs/screenshots/coasterRide.png) |
+
+Projections, left to right and top to bottom: isometric, cavalier, cabinet, top view, front view, and perspective at night with searchlights:
+
+![Projections](docs/screenshots/projections.png)
+
+One-, two- and three-point perspective:
+
+![Perspective vanishing points](docs/screenshots/perspectivePoints.png)

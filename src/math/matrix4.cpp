@@ -189,3 +189,14 @@ Matrix4 Matrix4::transposed() const {
     }
     return result;
 }
+
+Matrix4 Matrix4::obliqueShear(double receding, double angleRadians, double referenceDepth) {
+    // depth = referenceDepth - z (positive behind the reference plane, since the camera looks down -z).
+    // x' = x + depth * L cos(a), y' = y + depth * L sin(a)  =>  coefficients on z are -L cos(a), -L sin(a).
+    Matrix4 shear;
+    shear.elements[0][2] = -receding * std::cos(angleRadians);
+    shear.elements[1][2] = -receding * std::sin(angleRadians);
+    shear.elements[0][3] = receding * std::cos(angleRadians) * referenceDepth;
+    shear.elements[1][3] = receding * std::sin(angleRadians) * referenceDepth;
+    return shear;
+}

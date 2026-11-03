@@ -1,6 +1,6 @@
 /**
  * @file shaders.h
- * @brief GLSL 3.30 shader sources (kept in C++ raw strings so no files need to be found at runtime).
+ * @brief GLSL 3.30 shader sources (kept in C++ strings so no files need to be found at runtime).
  *
  * Shaders are the PROGRAMMABLE stages of the GPU pipeline:
  *   - the VERTEX shader runs once per vertex: it applies the model, view and
@@ -12,50 +12,21 @@
  */
 #pragma once
 
+#include <string>
+
 namespace shaders {
 
-/** @brief Lit geometry: transforms vertices and passes world-space data to the fragment shader. */
-inline const char* litVertex = R"GLSL(
-#version 330 core
-layout(location = 0) in vec3 inPosition;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec3 inColor;
-layout(location = 3) in vec2 inTextureCoordinate;
-
-uniform mat4 model;       // object -> world
-uniform mat4 view;        // world  -> camera
-uniform mat4 projection;  // camera -> clip space (perspective)
-
-out vec3 worldPosition;
-out vec3 worldNormal;
-out vec3 vertexColor;
-out vec2 textureCoordinate;
-
-void main() {
-    vec4 world = model * vec4(inPosition, 1.0);
-    worldPosition = world.xyz;
-    // Normals use the inverse-transpose so non-uniform scaling does not bend them.
-    worldNormal = mat3(transpose(inverse(model))) * inNormal;
-    vertexColor = inColor;
-    textureCoordinate = inTextureCoordinate;
-    gl_Position = projection * view * world;
-}
-)GLSL";
-
 /**
- * @brief Blinn-Phong lighting: ambient + diffuse + specular from the sun (or
- *        moon), plus a warm POINT LIGHT pouring out of the head's mouth, with
- *        distance fog toward the horizon colour.
+ * @brief The Phong reflection model, shared by the vertex shader (Gouraud
+ *        shading) and the fragment shader (flat and Phong shading).
+ *
+ * lightTerms() splits the result into the part that multiplies the surface
+ * colour (ambient + diffuse) and the part that is added on top (specular), so
+ * textures still work when lighting is computed per vertex.
  */
-inline const char* litFragment = R"GLSL(
-#version 330 core
-in vec3 worldPosition;
-in vec3 worldNormal;
-in vec3 vertexColor;
-in vec2 textureCoordinate;
-
+inline const char* lighting = R"GLSL(
 uniform vec3 cameraPosition;
-uniform vec3 sunDirection;      // unit vector TOWARD the sun
+uniform vec3 sunDirection;      // unit vector TOWARD the sun / moon
 uniform vec3 sunColor;
 uniform vec3 ambientColor;
 uniform vec3 portalPosition;    // point light in the mouth
@@ -63,8 +34,73 @@ uniform vec3 portalColor;
 uniform float portalIntensity;
 uniform float specularStrength;
 uniform float shininess;
+
+void lightTerms(vec3 position, vec3 normal, out vec3 diffuseLight, out vec3 specularLight) {
+    vec3 toCamera = normalize(cameraPosition - position);
+
+    // Sun: AMBIENT + Lambert DIFFUSE (N.L) + Blinn-Phong SPECULAR (N.H)^shininess.
+    float diffuse = max(dot(normal, sunDirection), 0.0);
+    vec3 halfVector = normalize(sunDirection + toCamera);
+    float specular = diffuse > 0.0 ? pow(max(dot(normal, halfVector), 0.0), shininess) * specularStrength : 0.0;
+    diffuseLight = ambientColor + sunColor * diffuse;
+    specularLight = sunColor * specular;
+
+    // Portal point light, attenuated with distance: 1 / (1 + k1 d + k2 d^2).
+    vec3 toPortal = portalPosition - position;
+    float distanceToPortal = length(toPortal);
+    toPortal /= distanceToPortal;
+    float attenuation = portalIntensity / (1.0 + 0.12 * distanceToPortal + 0.035 * distanceToPortal * distanceToPortal);
+    float portalDiffuse = max(dot(normal, toPortal), 0.0);
+    float portalSpecular = portalDiffuse > 0.0
+        ? pow(max(dot(normal, normalize(toPortal + toCamera)), 0.0), shininess) * specularStrength : 0.0;
+    diffuseLight += portalColor * portalDiffuse * attenuation;
+    specularLight += portalColor * portalSpecular * attenuation;
+}
+)GLSL";
+
+inline const char* litVertexMain = R"GLSL(
+layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec3 inColor;
+layout(location = 3) in vec2 inTextureCoordinate;
+
+uniform mat4 model;       // object -> world
+uniform mat4 view;        // world  -> camera
+uniform mat4 projection;  // camera -> clip space
+uniform int shadingMode;  // 0 flat, 1 Gouraud, 2 Phong
+
+out vec3 worldPosition;
+out vec3 worldNormal;
+out vec3 vertexColor;
+out vec2 textureCoordinate;
+out vec3 gouraudDiffuse;   // Gouraud: lighting computed HERE, per vertex, then interpolated
+out vec3 gouraudSpecular;
+
+void main() {
+    vec4 world = model * vec4(inPosition, 1.0);
+    worldPosition = world.xyz;
+    // Normals use the inverse-transpose so non-uniform scaling does not bend them.
+    worldNormal = normalize(mat3(transpose(inverse(model))) * inNormal);
+    vertexColor = inColor;
+    textureCoordinate = inTextureCoordinate;
+    gouraudDiffuse = vec3(0.0);
+    gouraudSpecular = vec3(0.0);
+    if (shadingMode == 1) lightTerms(worldPosition, worldNormal, gouraudDiffuse, gouraudSpecular);
+    gl_Position = projection * view * world;
+}
+)GLSL";
+
+inline const char* litFragmentMain = R"GLSL(
+in vec3 worldPosition;
+in vec3 worldNormal;
+in vec3 vertexColor;
+in vec2 textureCoordinate;
+in vec3 gouraudDiffuse;
+in vec3 gouraudSpecular;
+
+uniform int shadingMode;        // 0 flat, 1 Gouraud, 2 Phong
 uniform float emissive;         // 0 = lit normally, 1 = glows with its own colour (bulbs, portal)
-uniform vec3 tint;              // per-draw colour multiplier
+uniform vec3 tint;              // per-instance colour multiplier
 uniform vec3 fogColor;
 uniform float fogDensity;
 uniform sampler2D diffuseTexture;
@@ -75,26 +111,29 @@ out vec4 fragmentColor;
 void main() {
     vec3 base = vertexColor * tint;
     if (useTexture == 1) base *= texture(diffuseTexture, textureCoordinate).rgb;
-
-    vec3 normal = normalize(worldNormal);
-    if (!gl_FrontFacing) normal = -normal;  // thin double-sided surfaces (flags) lit from both sides
     vec3 toCamera = normalize(cameraPosition - worldPosition);
 
-    // Sun: ambient + Lambert diffuse + Blinn-Phong specular (half-vector).
-    float diffuse = max(dot(normal, sunDirection), 0.0);
-    vec3 halfVector = normalize(sunDirection + toCamera);
-    float specular = diffuse > 0.0 ? pow(max(dot(normal, halfVector), 0.0), shininess) * specularStrength : 0.0;
-    vec3 lit = base * (ambientColor + sunColor * diffuse) + sunColor * specular;
-
-    // Portal point light, attenuated with distance: 1 / (1 + k1 d + k2 d^2).
-    vec3 toPortal = portalPosition - worldPosition;
-    float distanceToPortal = length(toPortal);
-    toPortal /= distanceToPortal;
-    float attenuation = portalIntensity / (1.0 + 0.12 * distanceToPortal + 0.035 * distanceToPortal * distanceToPortal);
-    float portalDiffuse = max(dot(normal, toPortal), 0.0);
-    float portalSpecular = pow(max(dot(normal, normalize(toPortal + toCamera)), 0.0), shininess) * specularStrength;
-    lit += (base * portalDiffuse + portalSpecular) * portalColor * attenuation;
-
+    vec3 diffuseLight;
+    vec3 specularLight;
+    if (shadingMode == 1) {
+        // GOURAUD: use the colours lit at the three vertices, interpolated across the triangle.
+        diffuseLight = gouraudDiffuse;
+        specularLight = gouraudSpecular;
+    } else {
+        vec3 normal;
+        if (shadingMode == 0) {
+            // FLAT: one normal per triangle, from the screen-space derivatives of the position
+            // (two edges of the triangle under this pixel) - every pixel of a face gets the same shade.
+            normal = normalize(cross(dFdx(worldPosition), dFdy(worldPosition)));
+            if (dot(normal, toCamera) < 0.0) normal = -normal;
+        } else {
+            // PHONG: interpolate the NORMAL and light every pixel.
+            normal = normalize(worldNormal);
+            if (!gl_FrontFacing) normal = -normal;  // thin double-sided surfaces (flags) lit from both sides
+        }
+        lightTerms(worldPosition, normal, diffuseLight, specularLight);
+    }
+    vec3 lit = base * diffuseLight + specularLight;
     lit = mix(lit, base, emissive);
 
     // Exponential fog: distant objects fade into the sky colour (aerial perspective).
@@ -102,6 +141,10 @@ void main() {
     fragmentColor = vec4(mix(lit, fogColor, fogAmount), 1.0);
 }
 )GLSL";
+
+/** @brief Full vertex shader: version line, the shared lighting code, then main. */
+inline std::string litVertex() { return std::string("#version 330 core\n") + lighting + litVertexMain; }
+inline std::string litFragment() { return std::string("#version 330 core\n") + lighting + litFragmentMain; }
 
 /**
  * @brief The sky, drawn as one triangle that covers the whole screen.
@@ -123,7 +166,6 @@ inline const char* skyFragment = R"GLSL(
 #version 330 core
 in vec2 ndc;
 uniform mat4 inverseViewProjection;
-uniform vec3 cameraPosition;
 uniform vec3 skyTop;
 uniform vec3 skyMid;
 uniform vec3 skyHorizon;
@@ -151,8 +193,11 @@ float fractalNoise(vec2 p) {
 }
 
 void main() {
+    // View ray through this pixel: unproject points on the near and far planes.
+    // (Works for perspective AND parallel projections, where every ray is parallel.)
+    vec4 nearPoint = inverseViewProjection * vec4(ndc, -1.0, 1.0);
     vec4 farPoint = inverseViewProjection * vec4(ndc, 1.0, 1.0);
-    vec3 direction = normalize(farPoint.xyz / farPoint.w - cameraPosition);
+    vec3 direction = normalize(farPoint.xyz / farPoint.w - nearPoint.xyz / nearPoint.w);
     float elevation = max(direction.y, 0.0);
 
     // Same three-stop gradient as the software renderer, by elevation instead of screen row.
@@ -179,6 +224,35 @@ void main() {
         color = mix(color, cloudColor * mix(1.0, 0.25, nightAmount), cloudAlpha);
     }
     fragmentColor = vec4(color, 1.0);
+}
+)GLSL";
+
+/**
+ * @brief Searchlight beams: drawn with ADDITIVE blending (light adds to what is
+ *        behind it) and without writing depth, fading along the beam's length.
+ */
+inline const char* beamVertex = R"GLSL(
+#version 330 core
+layout(location = 0) in vec3 inPosition;
+layout(location = 3) in vec2 inTextureCoordinate;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+out float along;
+void main() {
+    along = inTextureCoordinate.y;  // 0 at the lamp, 1 at the far end
+    gl_Position = projection * view * model * vec4(inPosition, 1.0);
+}
+)GLSL";
+
+inline const char* beamFragment = R"GLSL(
+#version 330 core
+in float along;
+uniform vec3 tint;
+out vec4 fragmentColor;
+void main() {
+    float falloff = pow(1.0 - along, 1.6) * 0.16;
+    fragmentColor = vec4(tint * falloff, 1.0);
 }
 )GLSL";
 
