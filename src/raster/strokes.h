@@ -25,3 +25,15 @@ void drawThickLine(FrameBuffer& frameBuffer, const Vec2& start, const Vec2& end,
 void drawThickPolyline(FrameBuffer& frameBuffer, const std::vector<Vec2>& points, double radius, Color color);
 void drawThickPolyline(FrameBuffer& frameBuffer, const std::vector<Vec2>& points, double radius,
                        const PixelShader& shader);
+
+/**
+ * @brief Stroke whose radius changes smoothly from startRadius to endRadius along its length.
+ *
+ * Each segment becomes a quad whose two ends have different widths (a
+ * trapezoid), joined by circles of the matching radius. Used for the head's
+ * dreads, which are thick at the root and taper toward the tip.
+ */
+void fillTaperedPolyline(const std::vector<Vec2>& points, double startRadius, double endRadius,
+                         const SpanCallback& emitSpan);
+void drawTaperedPolyline(FrameBuffer& frameBuffer, const std::vector<Vec2>& points, double startRadius,
+                         double endRadius, Color color);

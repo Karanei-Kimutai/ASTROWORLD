@@ -50,3 +50,12 @@ void fillEllipse(FrameBuffer& frameBuffer, int centerX, int centerY, int radiusX
                  const PixelShader& shader);
 void blendEllipse(FrameBuffer& frameBuffer, int centerX, int centerY, int radiusX, int radiusY, Color color,
                   double alpha);
+
+/**
+ * @brief Blend a colour over an ellipse with alpha fading from maxAlpha at the
+ *        centre to 0 at the edge: alpha = maxAlpha * (1 - d^2)^2, where d is the
+ *        normalised elliptical distance. A per-fragment alpha, like a soft airbrush.
+ *        Used for clouds, glows, haze and contour shadows.
+ */
+void blendSoftEllipse(FrameBuffer& frameBuffer, double centerX, double centerY, double radiusX, double radiusY,
+                      Color color, double maxAlpha);

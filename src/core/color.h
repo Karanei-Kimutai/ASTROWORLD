@@ -97,22 +97,42 @@ std::uint8_t reduceTo8Bit(Color color);
 Color expandFrom8Bit(std::uint8_t packed);
 
 /**
- * @brief The ASTROWORLD colour palette.
+ * @brief The ASTROWORLD colour palette, sampled from the album artwork.
  *
- * Built around a split-complementary harmony: deep violet/indigo night sky
- * against warm gold and orange, with hot pink and cyan neon accents.
+ * Two moods share one scene:
+ *   - DAY (album cover): saturated blue sky, white cumulus, sandy plaza, brass head
+ *   - NIGHT (logo / alternate cover): deep navy starfield, teal lattice coaster, neon
+ * The wordmark uses its own flat, high-saturation letter colours (a
+ * near-complementary rainbow), listed under "wordmark".
  */
 namespace astroPalette {
-// Sky (top -> horizon sunset)
-inline constexpr Color skyTop{14, 6, 46};
-inline constexpr Color skyMid{92, 28, 128};
-inline constexpr Color skyHorizon{255, 118, 72};
+// Sky - day (album cover) and night (starfield), top -> horizon
+inline constexpr Color daySkyTop{28, 88, 196};
+inline constexpr Color daySkyMid{86, 148, 224};
+inline constexpr Color daySkyHorizon{196, 218, 240};
+inline constexpr Color nightSkyTop{3, 5, 18};
+inline constexpr Color nightSkyMid{10, 14, 42};
+inline constexpr Color nightSkyHorizon{44, 30, 82};
 
-// The golden inflatable head and the wordmark
+// Clouds
+inline constexpr Color cloudLight{255, 255, 255};
+inline constexpr Color cloudShadow{176, 194, 222};
+
+// The brass inflatable head (matte gold)
+inline constexpr Color brassLight{252, 222, 150};
+inline constexpr Color brass{204, 156, 62};
+inline constexpr Color brassDark{140, 98, 34};
+inline constexpr Color brassShadow{72, 48, 18};
+
+// Glow pouring out of the mouth
+inline constexpr Color portalCore{255, 248, 210};
+inline constexpr Color portalGlow{255, 196, 70};
+inline constexpr Color portalEdge{240, 120, 30};
+
+// Gold accents used on props (hub, bulbs, trims)
 inline constexpr Color goldLight{255, 240, 170};
 inline constexpr Color gold{255, 190, 40};
 inline constexpr Color goldDark{196, 120, 18};
-inline constexpr Color goldShadow{110, 52, 30};
 
 // Neon accents
 inline constexpr Color neonPink{255, 56, 170};
@@ -120,19 +140,40 @@ inline constexpr Color neonCyan{56, 232, 255};
 inline constexpr Color neonOrange{255, 140, 20};
 inline constexpr Color neonPurple{170, 80, 255};
 
-// Park structures and ground
-inline constexpr Color silhouette{40, 16, 64};
-inline constexpr Color groundFar{48, 22, 66};
-inline constexpr Color groundNear{20, 9, 30};
-inline constexpr Color pathColor{120, 62, 92};
+// Wordmark letter colours (flat, one per letter)
+inline constexpr Color letterYellow{255, 232, 0};
+inline constexpr Color letterRed{238, 34, 46};
+inline constexpr Color letterWhite{250, 250, 250};
+inline constexpr Color letterBlue{20, 146, 240};
+inline constexpr Color letterMagenta{230, 20, 230};
+inline constexpr Color letterGreen{40, 226, 140};
+inline constexpr Color letterOrange{242, 152, 40};
+inline constexpr Color letterRose{232, 30, 120};
+inline constexpr Color letterGrey{172, 172, 180};
+inline constexpr Color earthOcean{22, 92, 190};
+inline constexpr Color earthLand{70, 140, 60};
+
+// Rides and structures
+inline constexpr Color coasterTeal{38, 188, 178};
+inline constexpr Color coasterTealDark{16, 96, 98};
+inline constexpr Color fenceBlack{22, 22, 28};
+inline constexpr Color rocketSilver{214, 218, 226};
+inline constexpr Color rocketRed{214, 38, 44};
 inline constexpr Color steel{74, 56, 104};
 inline constexpr Color steelLight{150, 128, 190};
 inline constexpr Color steelDark{46, 32, 70};
 
+// Ground - day sandy concrete, night dark plaza
+inline constexpr Color dayGroundFar{186, 172, 150};
+inline constexpr Color dayGroundNear{216, 200, 172};
+inline constexpr Color nightGroundFar{34, 26, 44};
+inline constexpr Color nightGroundNear{20, 14, 26};
+inline constexpr Color daySkyline{120, 140, 170};
+inline constexpr Color nightSkyline{24, 16, 40};
+
 // Utility colours
 inline constexpr Color ink{12, 4, 20};
 inline constexpr Color crowd{16, 6, 24};
-inline constexpr Color mouthDark{30, 6, 28};
 inline constexpr Color cream{255, 236, 210};
 inline constexpr Color white{255, 255, 255};
 inline constexpr Color black{0, 0, 0};

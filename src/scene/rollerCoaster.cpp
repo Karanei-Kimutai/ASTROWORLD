@@ -51,31 +51,39 @@ void RollerCoaster::draw(FrameBuffer& frameBuffer) const {
         normals[index] = (next - previous).normalized().perpendicular();
     }
 
-    // ---- Supports: vertical posts with X-bracing between neighbours ------------
-    const std::size_t supportStep = 5;
+    // ---- Supports: slim teal posts with X-bracing between neighbours ------------
+    const std::size_t supportStep = 6;
     for (std::size_t index = 0; index < sampleCount; index += supportStep) {
-        const Vec2& top = track[index];
-        if (top.y > groundY - 8.0) continue;  // track is already at ground level here
-        drawThickLine(frameBuffer, top + Vec2(0.0, 4.0), {top.x, groundY}, 1.5, astroPalette::steelDark);
+        const Vec2 bottomChordPoint = track[index] + normals[index] * 12.0;
+        if (bottomChordPoint.y > groundY - 8.0) continue;  // track is already at ground level here
+        drawThickLine(frameBuffer, bottomChordPoint, {bottomChordPoint.x, groundY}, 1.2, astroPalette::coasterTealDark);
 
         const std::size_t nextIndex = index + supportStep;
-        if (nextIndex < sampleCount && track[nextIndex].y < groundY - 8.0) {
-            const Vec2& nextTop = track[nextIndex];
-            const double midY = (top.y + groundY) * 0.5;
-            const double nextMidY = (nextTop.y + groundY) * 0.5;
-            drawLineBresenham(frameBuffer, {top.x, midY}, {nextTop.x, groundY}, astroPalette::steelDark);
-            drawLineBresenham(frameBuffer, {top.x, groundY}, {nextTop.x, nextMidY}, astroPalette::steelDark);
+        if (nextIndex < sampleCount) {
+            const Vec2 nextPoint = track[nextIndex] + normals[nextIndex] * 12.0;
+            if (nextPoint.y > groundY - 8.0) continue;
+            const double midY = (bottomChordPoint.y + groundY) * 0.5;
+            const double nextMidY = (nextPoint.y + groundY) * 0.5;
+            drawLineBresenham(frameBuffer, {bottomChordPoint.x, midY}, {nextPoint.x, groundY}, astroPalette::coasterTealDark);
+            drawLineBresenham(frameBuffer, {bottomChordPoint.x, groundY}, {nextPoint.x, nextMidY}, astroPalette::coasterTealDark);
         }
     }
 
-    // ---- Rails: two offset copies of the spline, plus ties between them -------
-    std::vector<Vec2> lowerRail(sampleCount);
-    for (std::size_t index = 0; index < sampleCount; ++index) lowerRail[index] = track[index] + normals[index] * 5.0;
-    drawThickPolyline(frameBuffer, lowerRail, 1.5, Color{170, 30, 60});
-    for (std::size_t index = 0; index < sampleCount; index += 2) {
-        drawLineBresenham(frameBuffer, track[index], lowerRail[index], astroPalette::steelLight);
+    // ---- Lattice truss track (as on the night album cover) ----------------------
+    // Top chord = the spline itself, bottom chord = the spline offset 12 px along
+    // its normal. Bresenham zig-zags between the chords form the truss web.
+    std::vector<Vec2> bottomChord(sampleCount);
+    for (std::size_t index = 0; index < sampleCount; ++index) bottomChord[index] = track[index] + normals[index] * 12.0;
+    for (std::size_t index = 0; index + 2 < sampleCount; index += 2) {
+        drawLineBresenham(frameBuffer, track[index], bottomChord[index + 2], astroPalette::coasterTeal);  // diagonal
+        drawLineBresenham(frameBuffer, track[index], bottomChord[index], astroPalette::coasterTeal);      // vertical
     }
-    drawThickPolyline(frameBuffer, track, 2.2, astroPalette::neonOrange);
+    drawThickPolyline(frameBuffer, bottomChord, 1.4, astroPalette::coasterTeal);
+    drawThickPolyline(frameBuffer, track, 2.2, astroPalette::coasterTeal);
+    // Specular glint running along the top rail.
+    std::vector<Vec2> glint(sampleCount);
+    for (std::size_t index = 0; index < sampleCount; ++index) glint[index] = track[index] - normals[index] * 1.0;
+    drawPolylineBresenham(frameBuffer, glint, makeTint(astroPalette::coasterTeal, 0.5));
 
     // ---- Train: each car is a rectangle aligned to the track tangent ---------
     std::vector<double> cumulativeLength(sampleCount, 0.0);

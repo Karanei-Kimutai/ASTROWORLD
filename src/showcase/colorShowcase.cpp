@@ -112,10 +112,11 @@ void drawPalette(FrameBuffer& frameBuffer, int left, int top) {
         Color color;
     };
     const NamedColor entries[] = {
-        {"SKY TOP", astroPalette::skyTop},   {"SKY MID", astroPalette::skyMid},   {"HORIZON", astroPalette::skyHorizon},
-        {"GOLD", astroPalette::gold},        {"GOLD LIGHT", astroPalette::goldLight}, {"GOLD SHADOW", astroPalette::goldShadow},
-        {"NEON PINK", astroPalette::neonPink}, {"NEON CYAN", astroPalette::neonCyan}, {"NEON ORANGE", astroPalette::neonOrange},
-        {"NEON PURPLE", astroPalette::neonPurple},
+        {"DAY SKY", astroPalette::daySkyTop},     {"NIGHT SKY", astroPalette::nightSkyMid},
+        {"BRASS", astroPalette::brass},           {"BRASS LIGHT", astroPalette::brassLight},
+        {"PORTAL GLOW", astroPalette::portalGlow}, {"COASTER TEAL", astroPalette::coasterTeal},
+        {"LETTER YELLOW", astroPalette::letterYellow}, {"LETTER MAGENTA", astroPalette::letterMagenta},
+        {"LETTER BLUE", astroPalette::letterBlue}, {"LETTER GREEN", astroPalette::letterGreen},
     };
     int index = 0;
     for (const NamedColor& entry : entries) {
@@ -144,7 +145,7 @@ void renderColorShowcase(FrameBuffer& frameBuffer) {
     drawHsvWheel(frameBuffer, 160, 190, 130);
 
     drawLabel(frameBuffer, "TINTS SHADES TONES", 480, 12);
-    drawTintShadeTone(frameBuffer, 345, 70, astroPalette::gold);
+    drawTintShadeTone(frameBuffer, 345, 70, astroPalette::brass);
 
     drawLabel(frameBuffer, "RGB ADDITIVE", 800, 12);
     drawAdditiveCircles(frameBuffer, 800, 190);

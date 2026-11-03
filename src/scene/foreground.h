@@ -1,6 +1,6 @@
 /**
  * @file foreground.h
- * @brief Foreground details: crowd silhouettes, fence with string lights, balloon vendor.
+ * @brief Foreground details: crowd silhouettes walking into the head, balloon vendor.
  */
 #pragma once
 
@@ -13,18 +13,11 @@
 void drawPersonSilhouette(FrameBuffer& frameBuffer, const Vec2& feetPosition, double height, Color color);
 
 /**
- * @brief Visitors walking up the entrance path, scaled by depth and drawn
+ * @brief Visitors walking toward the glowing mouth, scaled by distance and drawn
  *        back-to-front (painter's algorithm) so nearer people overlap farther ones.
+ * @param portalBase Ground point at the centre of the mouth doorway.
  */
-void drawCrowd(FrameBuffer& frameBuffer, int pathTopY, double topLeftX, double topRightX, double bottomLeftX,
-               double bottomRightX, std::uint32_t seed);
-
-/**
- * @brief Fence posts across the bottom of the screen with Bezier-curve string
- *        lights sagging between them; the gap [gapStartX, gapEndX] is left open for the path.
- */
-void drawFenceWithLights(FrameBuffer& frameBuffer, double fenceTopY, double fenceBottomY, double gapStartX,
-                         double gapEndX);
+void drawCrowd(FrameBuffer& frameBuffer, const Vec2& portalBase, std::uint32_t seed);
 
 /**
  * @brief A balloon vendor holding a bunch of balloons.

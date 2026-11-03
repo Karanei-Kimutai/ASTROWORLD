@@ -3,9 +3,10 @@
  * @brief Checkpoint 1 entry point: renders every CP1 image to PPM files in output/.
  *
  * Outputs:
- *   output/astroworldScene.ppm            full park scene, 24-bit colour
- *   output/astroworldScene8Bit.ppm        same scene reduced to 256 colours (3:3:2)
- *   output/astroworldScene8BitDither.ppm  reduced with ordered dithering
+ *   output/astroworldDay.ppm              park scene as on the album cover, 24-bit colour
+ *   output/astroworldNight.ppm            the same park at night (starfield, searchlights)
+ *   output/astroworldDay8Bit.ppm          day scene reduced to 256 colours (3:3:2)
+ *   output/astroworldDay8BitDither.ppm    reduced with ordered dithering
  *   output/algorithmShowcase.ppm          each algorithm in isolation
  *   output/colorShowcase.ppm              colour models and theory
  *
@@ -38,11 +39,15 @@ int main(int argumentCount, char** argumentValues) {
     std::cout << "ASTROWORLD - Checkpoint 1 (pure C++ software rasterizer)\n";
     bool allSaved = true;
 
-    FrameBuffer scene(sceneWidth, sceneHeight);
-    renderAstroworldScene(scene);
-    allSaved &= saveAndReport(scene, outputDirectory / "astroworldScene.ppm");
-    allSaved &= saveAndReport(scene.reducedTo8Bit(false), outputDirectory / "astroworldScene8Bit.ppm");
-    allSaved &= saveAndReport(scene.reducedTo8Bit(true), outputDirectory / "astroworldScene8BitDither.ppm");
+    FrameBuffer dayScene(sceneWidth, sceneHeight);
+    renderAstroworldScene(dayScene, SceneSettings{0.0});
+    allSaved &= saveAndReport(dayScene, outputDirectory / "astroworldDay.ppm");
+    allSaved &= saveAndReport(dayScene.reducedTo8Bit(false), outputDirectory / "astroworldDay8Bit.ppm");
+    allSaved &= saveAndReport(dayScene.reducedTo8Bit(true), outputDirectory / "astroworldDay8BitDither.ppm");
+
+    FrameBuffer nightScene(sceneWidth, sceneHeight);
+    renderAstroworldScene(nightScene, SceneSettings{1.0});
+    allSaved &= saveAndReport(nightScene, outputDirectory / "astroworldNight.ppm");
 
     FrameBuffer algorithms(sceneWidth, sceneHeight);
     renderAlgorithmShowcase(algorithms);

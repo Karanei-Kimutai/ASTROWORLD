@@ -52,3 +52,32 @@ void drawThickPolyline(FrameBuffer& frameBuffer, const std::vector<Vec2>& points
         fillThickSegment(points[index], points[index + 1], radius, writer);
     }
 }
+
+void fillTaperedPolyline(const std::vector<Vec2>& points, double startRadius, double endRadius,
+                         const SpanCallback& emitSpan) {
+    const std::size_t pointCount = points.size();
+    if (pointCount == 0) return;
+    // Radius at each point, interpolated by its index along the stroke.
+    auto radiusAt = [&](std::size_t index) {
+        const double t = pointCount > 1 ? static_cast<double>(index) / (pointCount - 1) : 0.0;
+        return startRadius + (endRadius - startRadius) * t;
+    };
+    for (std::size_t index = 0; index + 1 < pointCount; ++index) {
+        const Vec2& start = points[index];
+        const Vec2& end = points[index + 1];
+        const Vec2 side = (end - start).normalized().perpendicular();
+        if (side.length() > 0.0) {
+            const double startHalf = radiusAt(index);
+            const double endHalf = radiusAt(index + 1);
+            fillPolygonScanLine({start + side * startHalf, end + side * endHalf, end - side * endHalf, start - side * startHalf},
+                                emitSpan);
+        }
+        rasterizeCircleFilled(roundToInt(start.x), roundToInt(start.y), roundToInt(radiusAt(index)), emitSpan);
+    }
+    rasterizeCircleFilled(roundToInt(points.back().x), roundToInt(points.back().y), roundToInt(endRadius), emitSpan);
+}
+
+void drawTaperedPolyline(FrameBuffer& frameBuffer, const std::vector<Vec2>& points, double startRadius,
+                         double endRadius, Color color) {
+    fillTaperedPolyline(points, startRadius, endRadius, makeSolidSpanWriter(frameBuffer, color));
+}

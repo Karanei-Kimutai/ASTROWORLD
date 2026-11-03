@@ -1,13 +1,15 @@
 /**
  * @file astroHead.cpp
- * @brief Drawing the golden head, layer by layer from back to front.
+ * @brief Drawing the brass head layer by layer, from back to front.
  *
  * Techniques used:
- *   - Closed Catmull-Rom splines for the face silhouette and hair cap, filled with scan-line fill
- *   - Cubic Bezier curves for dreads, brows, eyelids, nose and braids, drawn as thick strokes
- *   - Midpoint ellipses / circles for ears, eyes, nostrils and the open mouth
- *   - A per-pixel gold shader (scene/goldShading.h) for the inflatable sheen
- *   - Alpha blending for contour shadows and the glowing portal inside the mouth
+ *   - Closed Catmull-Rom spline for the face silhouette, filled with scan-line fill
+ *   - Catmull-Rom centre lines for the dreads, drawn as TAPERED strokes in three
+ *     layers (dark base, mid tone, highlight) to fake a lit cylinder
+ *   - Cubic Bezier curves for eyelids, lash lines and the lip rim
+ *   - Midpoint ellipses for ears, nose, nostrils and lips
+ *   - A per-pixel brass shader (scene/brassShading.h)
+ *   - Soft alpha-falloff ellipses for sculpted shadows, highlights and the mouth glow
  */
 #include "scene/astroHead.h"
 
@@ -21,252 +23,214 @@
 #include "raster/circles.h"
 #include "raster/lines.h"
 #include "raster/strokes.h"
-#include "scene/goldShading.h"
+#include "scene/brassShading.h"
 
 namespace {
 
 /** @brief Radii (in head units) of the imaginary ellipsoid the face shader lights. */
 constexpr double faceShadingRadiusU = 0.47;
-constexpr double faceShadingRadiusV = 0.56;
+constexpr double faceShadingRadiusV = 0.64;
 
 /**
- * @brief Blend a colour over an ellipse with alpha fading from maxAlpha at the
- *        centre to 0 at the edge: alpha = maxAlpha * (1 - d^2)^2, where d is the
- *        normalised elliptical distance. A per-fragment alpha, like a soft brush.
+ * @brief Dread centre lines for the RIGHT side of the head (u > 0); the left side mirrors them.
+ *
+ * Each dread roots on the crown, rises in a tall arch above the head, then
+ * falls down the side. Roots are spaced across the crown so the arches never cross.
  */
-void blendSoftEllipse(FrameBuffer& frameBuffer, const Vec2& center, double radiusX, double radiusY, Color color,
-                      double maxAlpha) {
-    rasterizeEllipseFilled(roundToInt(center.x), roundToInt(center.y), roundToInt(radiusX), roundToInt(radiusY),
-                           [&](int y, int xStart, int xEnd) {
-                               for (int x = xStart; x <= xEnd; ++x) {
-                                   const double du = (x - center.x) / radiusX;
-                                   const double dv = (y - center.y) / radiusY;
-                                   const double falloff = std::max(0.0, 1.0 - (du * du + dv * dv));
-                                   frameBuffer.blendPixel(x, y, color, maxAlpha * falloff * falloff);
-                               }
-                           });
-}
+const Vec2 outerDread[] = {{0.26, -0.46}, {0.40, -0.59}, {0.52, -0.50}, {0.57, -0.28}, {0.58, 0.0}, {0.59, 0.22}, {0.63, 0.30}};
+const Vec2 middleDread[] = {{0.16, -0.51}, {0.26, -0.67}, {0.40, -0.63}, {0.46, -0.42}, {0.48, -0.15}, {0.48, 0.08}, {0.51, 0.16}};
+const Vec2 frontDreadRight[] = {{0.06, -0.54}, {0.11, -0.71}, {0.24, -0.69}, {0.30, -0.50}, {0.32, -0.25}, {0.31, 0.0}, {0.34, 0.08}};
+const Vec2 frontDreadLeft[] = {{0.06, -0.54}, {0.12, -0.71}, {0.25, -0.69}, {0.32, -0.50}, {0.34, -0.20}, {0.33, 0.12}, {0.37, 0.22}};
 
 }  // namespace
 
 void AstroHead::draw(FrameBuffer& frameBuffer) const {
-    // Contact shadow on the ground under the chin.
-    const Vec2 shadowCenter = toScreen(0.0, 0.52);
-    blendEllipse(frameBuffer, roundToInt(shadowCenter.x), roundToInt(shadowCenter.y), roundToInt(0.5 * scale),
-                 roundToInt(0.045 * scale), astroPalette::ink, 0.55);
-
-    // Painter's algorithm: draw from the back of the head to the front.
-    drawBackHair(frameBuffer);
+    // Painter's algorithm: back of the head first, front-most details last.
+    drawOuterDreads(frameBuffer);
     drawEars(frameBuffer);
     drawFace(frameBuffer);
-    drawHairCap(frameBuffer);
-    drawFrontHair(frameBuffer);
-    drawEyesAndBrows(frameBuffer);
+    drawClosedEyes(frameBuffer);
     drawNose(frameBuffer);
-    drawMouth(frameBuffer);
+    drawMouthPortal(frameBuffer);
+    drawFrontDreads(frameBuffer);
 }
 
-void AstroHead::drawBackHair(FrameBuffer& frameBuffer) const {
-    // Long dreads hanging behind the head; only the parts outside the face silhouette stay visible.
-    const PixelShader hairShader = makeGoldShader(toScreen(0.0, -0.02), faceShadingRadiusU * scale * 1.15,
-                                                  faceShadingRadiusV * scale * 1.15, 0.72);
-    const double dreadRadius = 0.022 * scale;
-    for (double side : {-1.0, 1.0}) {
-        for (int strand = 0; strand < 10; ++strand) {
-            const double s = strand;
-            const std::vector<Vec2> dread =
-                sampleCubicBezier(toScreen(side * (0.30 + 0.012 * s), -0.36 + 0.02 * s),
-                                  toScreen(side * (0.47 + 0.010 * s), -0.30 + 0.03 * s),
-                                  toScreen(side * 0.52, -0.05 + 0.03 * s),
-                                  toScreen(side * (0.50 - 0.005 * s), 0.06 + 0.035 * s), 16);
-            drawThickPolyline(frameBuffer, dread, dreadRadius, hairShader);
-        }
+void AstroHead::drawDread(FrameBuffer& frameBuffer, const Vec2* unitPoints, int pointCount, double side) const {
+    std::vector<Vec2> screenPoints;
+    for (int index = 0; index < pointCount; ++index) {
+        screenPoints.push_back(toScreen(side * unitPoints[index].x, unitPoints[index].y));
     }
+    const std::vector<Vec2> centreLine = sampleCatmullRomSpline(screenPoints, 10, false);
+
+    // A thick tube that tapers from root to tip. Three offset strokes fake cylindrical
+    // lighting: dark base, mid tone shifted toward the light, narrow highlight.
+    const double rootRadius = 0.043 * scale;
+    const double tipRadius = 0.024 * scale;
+    auto offsetLine = [&](double offsetX, double offsetY) {
+        std::vector<Vec2> shifted;
+        for (const Vec2& point : centreLine) shifted.push_back(point + Vec2(offsetX, offsetY));
+        return shifted;
+    };
+    const double averageRadius = (rootRadius + tipRadius) * 0.5;
+    drawTaperedPolyline(frameBuffer, centreLine, rootRadius, tipRadius, astroPalette::brassDark);
+    drawTaperedPolyline(frameBuffer, offsetLine(-0.22 * averageRadius, -0.1 * averageRadius), rootRadius * 0.72,
+                        tipRadius * 0.7, astroPalette::brass);
+    drawTaperedPolyline(frameBuffer, offsetLine(-0.45 * averageRadius, -0.2 * averageRadius), rootRadius * 0.26,
+                        tipRadius * 0.25, lerpColor(astroPalette::brass, astroPalette::brassLight, 0.7));
+}
+
+void AstroHead::drawOuterDreads(FrameBuffer& frameBuffer) const {
+    // Outermost dreads sit behind the head: their roots are hidden by the crown.
+    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, outerDread, 7, side);
 }
 
 void AstroHead::drawEars(FrameBuffer& frameBuffer) const {
     for (double side : {-1.0, 1.0}) {
-        const Vec2 earCenter = toScreen(side * 0.44, -0.02);
-        const double earRadiusX = 0.06 * scale;
-        const double earRadiusY = 0.11 * scale;
-        fillEllipse(frameBuffer, roundToInt(earCenter.x), roundToInt(earCenter.y), roundToInt(earRadiusX),
-                    roundToInt(earRadiusY), makeGoldShader(earCenter, earRadiusX, earRadiusY, 0.85));
-        // Inner ear: a darker blended ellipse.
-        blendEllipse(frameBuffer, roundToInt(earCenter.x + side * 0.01 * scale), roundToInt(earCenter.y),
-                     roundToInt(earRadiusX * 0.5), roundToInt(earRadiusY * 0.6), astroPalette::goldShadow, 0.55);
+        const Vec2 earCenter = toScreen(side * 0.42, -0.04);
+        const double earRadiusX = 0.055 * scale;
+        const double earRadiusY = 0.10 * scale;
+        fillEllipse(frameBuffer, roundToInt(earCenter.x), roundToInt(earCenter.y), roundToInt(earRadiusX), roundToInt(earRadiusY),
+                    makeBrassShader(earCenter, earRadiusX, earRadiusY, 0.8, rimColor));
+        blendSoftEllipse(frameBuffer, earCenter.x, earCenter.y, earRadiusX * 0.5, earRadiusY * 0.6, astroPalette::brassShadow, 0.6);
     }
 }
 
 void AstroHead::drawFace(FrameBuffer& frameBuffer) const {
-    // Silhouette: a closed Catmull-Rom spline through 14 points (crown -> cheek -> jaw -> chin -> ...).
-    const double outlineUnits[][2] = {{0.0, -0.52},  {0.30, -0.47},  {0.42, -0.30},  {0.44, -0.05}, {0.40, 0.15},
-                                      {0.32, 0.33},  {0.18, 0.47},   {0.0, 0.52},    {-0.18, 0.47}, {-0.32, 0.33},
-                                      {-0.40, 0.15}, {-0.44, -0.05}, {-0.42, -0.30}, {-0.30, -0.47}};
+    // Silhouette: a closed Catmull-Rom spline. Tall egg shape, widest at the
+    // cheekbones, sides running straight down into the ground.
+    const double outlineUnits[][2] = {{0.0, -0.56},  {0.22, -0.53}, {0.35, -0.42}, {0.41, -0.24}, {0.43, -0.04},
+                                      {0.42, 0.18},  {0.41, 0.38},  {0.41, 0.52},  {-0.41, 0.52}, {-0.41, 0.38},
+                                      {-0.42, 0.18}, {-0.43, -0.04}, {-0.41, -0.24}, {-0.35, -0.42}, {-0.22, -0.53}};
     std::vector<Vec2> outlinePoints;
     for (const auto& point : outlineUnits) outlinePoints.push_back(toScreen(point[0], point[1]));
-    const std::vector<Vec2> faceOutline = sampleCatmullRomSpline(outlinePoints, 12, true);
 
-    // The outline polygon is filled with the scan-line algorithm; the gold shader colours each pixel.
-    fillPolygon(frameBuffer, faceOutline,
-                makeGoldShader(toScreen(0.0, -0.02), faceShadingRadiusU * scale, faceShadingRadiusV * scale, 1.0));
+    // Scan-line fill with the brass shader, discarding rows below the ground line
+    // (the spline overshoots slightly at the bottom corners).
+    const PixelShader faceShader =
+        makeBrassShader(toScreen(0.0, -0.05), faceShadingRadiusU * scale, faceShadingRadiusV * scale, 1.0, rimColor);
+    const int lastRow = roundToInt(groundY());
+    fillPolygonScanLine(sampleCatmullRomSpline(outlinePoints, 12, true), [&](int y, int xStart, int xEnd) {
+        if (y <= lastRow) frameBuffer.fillSpan(y, xStart, xEnd, faceShader);
+    });
 
-    // Sculpted contours: soft shadows under the cheekbones. Alpha falls off
-    // smoothly with distance from the centre, so the shadow has no hard edge.
+    // Sculpting: temples, hollows under the cheekbones, a brow-bone highlight.
     for (double side : {-1.0, 1.0}) {
-        blendSoftEllipse(frameBuffer, toScreen(side * 0.31, 0.12), 0.10 * scale, 0.16 * scale, astroPalette::goldShadow, 0.22);
-    }
-    const Vec2 chinShadow = toScreen(0.0, 0.43);
-    blendEllipse(frameBuffer, roundToInt(chinShadow.x), roundToInt(chinShadow.y), roundToInt(0.11 * scale),
-                 roundToInt(0.035 * scale), astroPalette::goldShadow, 0.22);
-}
-
-void AstroHead::drawHairCap(FrameBuffer& frameBuffer) const {
-    // Closed spline: over the crown, then back along the hairline across the forehead.
-    const double capUnits[][2] = {{-0.43, -0.12}, {-0.43, -0.32}, {-0.30, -0.49}, {0.0, -0.55},  {0.30, -0.49},
-                                  {0.43, -0.32},  {0.43, -0.12},  {0.36, -0.21},  {0.20, -0.29}, {0.0, -0.31},
-                                  {-0.20, -0.29}, {-0.36, -0.21}};
-    std::vector<Vec2> capPoints;
-    for (const auto& point : capUnits) capPoints.push_back(toScreen(point[0], point[1]));
-    fillPolygon(frameBuffer, sampleCatmullRomSpline(capPoints, 10, true),
-                makeGoldShader(toScreen(0.0, -0.02), faceShadingRadiusU * scale, faceShadingRadiusV * scale, 0.72));
-
-    // Braided rows running from the hairline back over the crown (thin Bezier strokes).
-    const Color braidLine = lerpColor(astroPalette::goldShadow, astroPalette::goldDark, 0.3);
-    for (int row = -5; row <= 5; ++row) {
-        const double r = row;
-        const double hairlineV = -0.30 + std::fabs(r) * 0.012;
-        const std::vector<Vec2> braid = sampleCubicBezier(toScreen(r * 0.072, hairlineV), toScreen(r * 0.076, -0.42),
-                                                          toScreen(r * 0.05, -0.50), toScreen(r * 0.02, -0.535), 14);
-        drawThickPolyline(frameBuffer, braid, 0.005 * scale, braidLine);
-        // Little glints along each braid suggest the woven texture.
-        for (std::size_t knot = 2; knot + 1 < braid.size(); knot += 3) {
-            fillCircle(frameBuffer, roundToInt(braid[knot].x + 0.008 * scale), roundToInt(braid[knot].y), 1,
-                       astroPalette::goldLight);
-        }
+        const Vec2 temple = toScreen(side * 0.33, -0.26);
+        blendSoftEllipse(frameBuffer, temple.x, temple.y, 0.09 * scale, 0.14 * scale, astroPalette::brassShadow, 0.25);
+        const Vec2 cheekHollow = toScreen(side * 0.30, 0.20);
+        blendSoftEllipse(frameBuffer, cheekHollow.x, cheekHollow.y, 0.10 * scale, 0.16 * scale, astroPalette::brassShadow, 0.3);
+        const Vec2 browBone = toScreen(side * 0.17, -0.165);
+        blendSoftEllipse(frameBuffer, browBone.x, browBone.y, 0.11 * scale, 0.035 * scale, astroPalette::brassLight, 0.3);
     }
 }
 
-void AstroHead::drawFrontHair(FrameBuffer& frameBuffer) const {
-    // Dreads falling forward past the temples, framing the face.
-    const PixelShader hairShader =
-        makeGoldShader(toScreen(0.0, -0.02), faceShadingRadiusU * scale, faceShadingRadiusV * scale, 0.88);
-    const double dreadRadius = 0.024 * scale;
+void AstroHead::drawClosedEyes(FrameBuffer& frameBuffer) const {
     for (double side : {-1.0, 1.0}) {
-        for (int strand = 0; strand < 6; ++strand) {
-            const double s = strand;
-            const std::vector<Vec2> dread =
-                sampleCubicBezier(toScreen(side * (0.22 + 0.035 * s), -0.30 + 0.02 * s),
-                                  toScreen(side * (0.36 + 0.030 * s), -0.28 + 0.03 * s),
-                                  toScreen(side * (0.42 + 0.020 * s), -0.10 + 0.04 * s),
-                                  toScreen(side * (0.42 + 0.015 * s), 0.05 + 0.05 * s), 16);
-            drawThickPolyline(frameBuffer, dread, dreadRadius, hairShader);
-            // A thin highlight down the lit side of each dread.
-            std::vector<Vec2> highlight;
-            for (const Vec2& point : dread) highlight.push_back(point + Vec2(-dreadRadius * 0.35, -dreadRadius * 0.2));
-            drawThickPolyline(frameBuffer, highlight, dreadRadius * 0.25, makeTint(astroPalette::gold, 0.45));
-        }
-    }
-}
+        // Socket shadow, then the lit bulge of the closed upper eyelid.
+        const Vec2 socket = toScreen(side * 0.16, -0.075);
+        blendSoftEllipse(frameBuffer, socket.x, socket.y, 0.13 * scale, 0.08 * scale, astroPalette::brassShadow, 0.38);
+        const Vec2 lid = toScreen(side * 0.155, -0.09);
+        blendSoftEllipse(frameBuffer, lid.x, lid.y, 0.095 * scale, 0.045 * scale, astroPalette::brassLight, 0.5);
 
-void AstroHead::drawEyesAndBrows(FrameBuffer& frameBuffer) const {
-    const Color lidColor = lerpColor(astroPalette::goldShadow, astroPalette::goldDark, 0.25);
-    for (double side : {-1.0, 1.0}) {
-        // Eye socket shadow.
-        const Vec2 socket = toScreen(side * 0.16, -0.055);
-        blendEllipse(frameBuffer, roundToInt(socket.x), roundToInt(socket.y), roundToInt(0.10 * scale),
-                     roundToInt(0.06 * scale), astroPalette::goldShadow, 0.25);
-
-        // Eyeball, iris, pupil and catch-light (midpoint ellipse + circles).
-        fillEllipse(frameBuffer, roundToInt(socket.x), roundToInt(socket.y), roundToInt(0.075 * scale),
-                    roundToInt(0.036 * scale), Color{255, 232, 165});
-        const Vec2 iris = toScreen(side * 0.16, -0.052);
-        fillCircle(frameBuffer, roundToInt(iris.x), roundToInt(iris.y), roundToInt(0.03 * scale), astroPalette::goldDark);
-        fillCircle(frameBuffer, roundToInt(iris.x), roundToInt(iris.y), roundToInt(0.014 * scale), Color{70, 34, 12});
-        fillCircle(frameBuffer, roundToInt(iris.x - 0.01 * scale), roundToInt(iris.y - 0.01 * scale),
-                   roundToInt(0.006 * scale), astroPalette::white);
-
-        // Heavy upper eyelid and brow: cubic Bezier strokes.
+        // Crease above the lid and the closed lash line - both cubic Beziers.
         drawThickPolyline(frameBuffer,
-                          sampleCubicBezier(toScreen(side * 0.075, -0.05), toScreen(side * 0.12, -0.10),
-                                            toScreen(side * 0.20, -0.10), toScreen(side * 0.245, -0.045), 16),
-                          0.012 * scale, lidColor);
+                          sampleCubicBezier(toScreen(side * 0.07, -0.115), toScreen(side * 0.12, -0.148), toScreen(side * 0.20, -0.148),
+                                            toScreen(side * 0.25, -0.105), 16),
+                          0.006 * scale, astroPalette::brassDark);
         drawThickPolyline(frameBuffer,
-                          sampleCubicBezier(toScreen(side * 0.06, -0.14), toScreen(side * 0.12, -0.19),
-                                            toScreen(side * 0.22, -0.19), toScreen(side * 0.29, -0.13), 16),
-                          0.02 * scale, lidColor);
+                          sampleCubicBezier(toScreen(side * 0.065, -0.062), toScreen(side * 0.11, -0.036), toScreen(side * 0.20, -0.036),
+                                            toScreen(side * 0.255, -0.068), 16),
+                          0.009 * scale, astroPalette::brassShadow);
+
+        // Soft fold under the eye.
+        const Vec2 underEye = toScreen(side * 0.16, -0.02);
+        blendSoftEllipse(frameBuffer, underEye.x, underEye.y, 0.085 * scale, 0.022 * scale, astroPalette::brassShadow, 0.22);
     }
 }
 
 void AstroHead::drawNose(FrameBuffer& frameBuffer) const {
-    const Color noseShadow = lerpColor(astroPalette::gold, astroPalette::goldShadow, 0.55);
-    // Bridge shadow on the right side (away from the light).
-    drawThickPolyline(frameBuffer,
-                      sampleCubicBezier(toScreen(0.035, -0.05), toScreen(0.05, 0.0), toScreen(0.05, 0.05),
-                                        toScreen(0.065, 0.10), 12),
-                      0.009 * scale, noseShadow);
-    // Highlight on the tip.
-    const Vec2 tip = toScreen(-0.005, 0.095);
-    blendEllipse(frameBuffer, roundToInt(tip.x), roundToInt(tip.y), roundToInt(0.03 * scale), roundToInt(0.022 * scale),
-                 astroPalette::goldLight, 0.5);
-    // Base of the nose and the nostrils.
-    drawThickPolyline(frameBuffer,
-                      sampleCubicBezier(toScreen(-0.075, 0.115), toScreen(-0.06, 0.165), toScreen(0.06, 0.165),
-                                        toScreen(0.075, 0.115), 16),
-                      0.012 * scale, noseShadow);
+    // Bridge: highlight down the lit side, shadow down the far side.
+    const Vec2 bridgeLight = toScreen(-0.015, -0.01);
+    blendSoftEllipse(frameBuffer, bridgeLight.x, bridgeLight.y, 0.03 * scale, 0.10 * scale, astroPalette::brassLight, 0.3);
+    const Vec2 bridgeShadow = toScreen(0.06, 0.02);
+    blendSoftEllipse(frameBuffer, bridgeShadow.x, bridgeShadow.y, 0.03 * scale, 0.09 * scale, astroPalette::brassShadow, 0.35);
+
+    // Shadow cast under the nose onto the upper lip.
+    const Vec2 underNose = toScreen(0.0, 0.19);
+    blendSoftEllipse(frameBuffer, underNose.x, underNose.y, 0.13 * scale, 0.035 * scale, astroPalette::brassShadow, 0.5);
+
+    // The tip and nostril wings are SCULPTED with soft light and shadow rather
+    // than drawn as separate shapes, so they stay part of the same surface.
+    const Vec2 tipHighlight = toScreen(-0.012, 0.085);
+    blendSoftEllipse(frameBuffer, tipHighlight.x, tipHighlight.y, 0.06 * scale, 0.045 * scale, astroPalette::brassLight, 0.6);
+    const Vec2 underTip = toScreen(0.0, 0.148);
+    blendSoftEllipse(frameBuffer, underTip.x, underTip.y, 0.07 * scale, 0.025 * scale, astroPalette::brassShadow, 0.5);
     for (double side : {-1.0, 1.0}) {
-        const Vec2 nostril = toScreen(side * 0.035, 0.135);
-        fillEllipse(frameBuffer, roundToInt(nostril.x), roundToInt(nostril.y), roundToInt(0.016 * scale),
-                    roundToInt(0.008 * scale), astroPalette::goldShadow);
+        // Wing: a soft highlight on top, a shadow outside it, and a crease curving round it (Bezier).
+        const Vec2 wingLight = toScreen(side * 0.088, 0.115);
+        blendSoftEllipse(frameBuffer, wingLight.x, wingLight.y, 0.035 * scale, 0.03 * scale, astroPalette::brassLight, side < 0 ? 0.4 : 0.2);
+        const Vec2 wingShadow = toScreen(side * 0.135, 0.13);
+        blendSoftEllipse(frameBuffer, wingShadow.x, wingShadow.y, 0.03 * scale, 0.05 * scale, astroPalette::brassShadow, 0.35);
+        drawThickPolyline(frameBuffer,
+                          sampleCubicBezier(toScreen(side * 0.055, 0.075), toScreen(side * 0.125, 0.085), toScreen(side * 0.14, 0.155),
+                                            toScreen(side * 0.075, 0.165), 16),
+                          0.005 * scale, astroPalette::brassDark);
+    }
+    for (double side : {-1.0, 1.0}) {
+        const Vec2 nostril = toScreen(side * 0.047, 0.152);
+        fillEllipse(frameBuffer, roundToInt(nostril.x), roundToInt(nostril.y), roundToInt(0.027 * scale), roundToInt(0.012 * scale),
+                    Color{52, 34, 12});
     }
 }
 
-void AstroHead::drawMouth(FrameBuffer& frameBuffer) const {
-    const Vec2 mouthCenter = toScreen(0.0, 0.29);
-    const int mouthX = roundToInt(mouthCenter.x);
-    const int mouthY = roundToInt(mouthCenter.y);
+void AstroHead::drawMouthPortal(FrameBuffer& frameBuffer) const {
+    // Lips: one big shaded ellipse whose lower half is buried in the ground.
+    const Vec2 lipCenter = toScreen(0.0, 0.37);
+    const double lipRadiusX = 0.21 * scale;
+    const double lipRadiusY = 0.15 * scale;
+    const int lastRow = roundToInt(groundY());
+    const PixelShader lipShader = makeBrassShader(lipCenter + Vec2(0.0, -0.03 * scale), lipRadiusX * 1.1, lipRadiusY * 1.3, 0.95, rimColor);
+    rasterizeEllipseFilled(roundToInt(lipCenter.x), roundToInt(lipCenter.y), roundToInt(lipRadiusX), roundToInt(lipRadiusY),
+                           [&](int y, int xStart, int xEnd) {
+                               if (y <= lastRow) frameBuffer.fillSpan(y, xStart, xEnd, lipShader);
+                           });
+    // Upper-lip highlight.
+    const Vec2 upperLip = toScreen(-0.02, 0.255);
+    blendSoftEllipse(frameBuffer, upperLip.x, upperLip.y, 0.11 * scale, 0.03 * scale, astroPalette::brassLight, 0.5);
 
-    // Lips: a shaded ellipse slightly larger than the opening.
-    const double lipRadiusX = 0.17 * scale;
-    const double lipRadiusY = 0.11 * scale;
-    fillEllipse(frameBuffer, mouthX, mouthY, roundToInt(lipRadiusX), roundToInt(lipRadiusY),
-                makeGoldShader(mouthCenter + Vec2(0.0, -0.02 * scale), lipRadiusX * 1.2, lipRadiusY * 1.4, 0.9));
+    // The doorway: straight sides rising from the ground into a rounded arch (Bezier).
+    std::vector<Vec2> doorway = {toScreen(-0.135, 0.5), toScreen(-0.135, 0.40)};
+    const std::vector<Vec2> arch = sampleCubicBezier(toScreen(-0.135, 0.40), toScreen(-0.135, 0.30), toScreen(0.135, 0.30),
+                                                     toScreen(0.135, 0.40), 24);
+    doorway.insert(doorway.end(), arch.begin(), arch.end());
+    doorway.push_back(toScreen(0.135, 0.5));
 
-    // The opening - the dark entrance into ASTROWORLD.
-    const double openingRadiusX = 0.125 * scale;
-    const double openingRadiusY = 0.072 * scale;
-    fillEllipse(frameBuffer, mouthX, mouthY, roundToInt(openingRadiusX), roundToInt(openingRadiusY),
-                astroPalette::mouthDark);
+    // Fragment shader: blinding white-yellow at the bottom centre, through gold, to orange at the rim.
+    const Vec2 lightSource = toScreen(0.0, 0.5);
+    const double doorwayRadius = 0.2 * scale;
+    fillPolygon(frameBuffer, doorway, [=](int x, int y) {
+        const double distance = std::min(1.0, (Vec2(x, y) - lightSource).length() / doorwayRadius);
+        if (distance < 0.5) return lerpColor(astroPalette::portalCore, astroPalette::portalGlow, distance / 0.5);
+        return lerpColor(astroPalette::portalGlow, astroPalette::portalEdge, (distance - 0.5) / 0.5);
+    });
 
-    // Portal glow inside: shrinking blended ellipses from pink to orange.
-    for (int layer = 0; layer < 6; ++layer) {
-        const double t = layer / 6.0;
-        blendEllipse(frameBuffer, mouthX, roundToInt(mouthCenter.y + 0.015 * scale),
-                     roundToInt(openingRadiusX * (0.9 - 0.12 * layer)), roundToInt(openingRadiusY * (0.75 - 0.1 * layer)),
-                     lerpColor(astroPalette::neonPink, astroPalette::neonOrange, t), 0.16);
-    }
+    // Inner lip rim around the arch.
+    std::vector<Vec2> rim = {toScreen(-0.135, 0.5)};
+    rim.insert(rim.end(), arch.begin(), arch.end());
+    rim.push_back(toScreen(0.135, 0.5));
+    drawThickPolyline(frameBuffer, rim, 0.01 * scale, astroPalette::brassDark);
 
-    // Top teeth: fill a rectangle, but DISCARD pixels outside the opening ellipse
-    // (a per-fragment test, like clipping a shape against a curved window).
-    const Color teethColor{255, 226, 140};
-    const SpanCallback teethWriter = [&](int y, int xStart, int xEnd) {
-        for (int x = xStart; x <= xEnd; ++x) {
-            const double du = (x - mouthCenter.x) / openingRadiusX;
-            const double dv = (y - mouthCenter.y) / openingRadiusY;
-            if (du * du + dv * dv <= 1.0) frameBuffer.setPixel(x, y, teethColor);
-        }
-    };
-    fillPolygonScanLine({toScreen(-0.1, 0.21), toScreen(0.1, 0.21), toScreen(0.1, 0.248), toScreen(-0.1, 0.248)},
-                        teethWriter);
-    for (int tooth = -3; tooth <= 3; ++tooth) {
-        const Vec2 gapTop = toScreen(tooth * 0.026, 0.222);
-        drawLineBresenham(frameBuffer, gapTop, gapTop + Vec2(0.0, 0.024 * scale), astroPalette::goldDark);
-    }
+    // Light spilling out: a haze over the lips and a pool of light on the ground.
+    const Vec2 hazeCenter = toScreen(0.0, 0.44);
+    blendSoftEllipse(frameBuffer, hazeCenter.x, hazeCenter.y, 0.34 * scale, 0.2 * scale, astroPalette::portalGlow, 0.45 * glowStrength);
+    const Vec2 poolCenter = toScreen(0.0, 0.53);
+    blendSoftEllipse(frameBuffer, poolCenter.x, poolCenter.y, 0.75 * scale, 0.12 * scale, astroPalette::portalGlow, 0.55 * glowStrength);
+    blendSoftEllipse(frameBuffer, poolCenter.x, poolCenter.y, 0.3 * scale, 0.05 * scale, astroPalette::portalCore, 0.6 * glowStrength);
+}
 
-    // Lip line around the opening (2 px), and a highlight on the upper lip.
-    drawEllipse(frameBuffer, mouthX, mouthY, roundToInt(openingRadiusX), roundToInt(openingRadiusY), astroPalette::goldShadow);
-    drawEllipse(frameBuffer, mouthX, mouthY, roundToInt(openingRadiusX) + 1, roundToInt(openingRadiusY) + 1,
-                astroPalette::goldShadow);
-    const Vec2 lipHighlight = toScreen(-0.02, 0.198);
-    blendEllipse(frameBuffer, roundToInt(lipHighlight.x), roundToInt(lipHighlight.y), roundToInt(0.07 * scale),
-                 roundToInt(0.012 * scale), astroPalette::goldLight, 0.55);
+void AstroHead::drawFrontDreads(FrameBuffer& frameBuffer) const {
+    // Middle dreads hang beside the cheeks; the front pair falls past the temples.
+    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, middleDread, 7, side);
+    drawDread(frameBuffer, frontDreadRight, 7, 1.0);
+    drawDread(frameBuffer, frontDreadLeft, 7, -1.0);
 }

@@ -1,6 +1,6 @@
 /**
  * @file foreground.cpp
- * @brief Crowd, fence lights and balloon vendor.
+ * @brief Crowd and balloon vendor.
  */
 #include "scene/foreground.h"
 
@@ -29,8 +29,7 @@ void drawPersonSilhouette(FrameBuffer& frameBuffer, const Vec2& feetPosition, do
                std::max(1, roundToInt(height * 0.13)), color);
 }
 
-void drawCrowd(FrameBuffer& frameBuffer, int pathTopY, double topLeftX, double topRightX, double bottomLeftX,
-               double bottomRightX, std::uint32_t seed) {
+void drawCrowd(FrameBuffer& frameBuffer, const Vec2& portalBase, std::uint32_t seed) {
     SimpleRandom random(seed);
     const double bottomY = frameBuffer.getHeight();
 
@@ -39,64 +38,19 @@ void drawCrowd(FrameBuffer& frameBuffer, int pathTopY, double topLeftX, double t
         double height;
     };
     std::vector<Visitor> visitors;
-    for (int index = 0; index < 16; ++index) {
-        const double depth = random.nextRange(0.04, 0.9);  // 0 = at the head, 1 = at the viewer
-        const double y = pathTopY + depth * (bottomY - pathTopY);
-        // The path widens toward the viewer; pick x inside the path at this depth.
-        const double leftX = topLeftX + (bottomLeftX - topLeftX) * depth;
-        const double rightX = topRightX + (bottomRightX - topRightX) * depth;
-        const double x = random.nextRange(leftX + 10.0, rightX - 10.0);
-        visitors.push_back({{x, y}, 14.0 + depth * 50.0});  // nearer = taller (perspective scaling)
+    for (int index = 0; index < 12; ++index) {
+        // depth 0 = at the doorway, 1 = near the viewer. People converge on the
+        // doorway, so the spread in x shrinks as they get closer to it.
+        const double depth = random.nextRange(0.0, 0.55);
+        const double y = portalBase.y + 2.0 + depth * (bottomY - portalBase.y);
+        const double spread = 30.0 + depth * 420.0;
+        const double x = portalBase.x + random.nextRange(-spread, spread);
+        visitors.push_back({{x, y}, 30.0 + depth * 70.0});  // nearer = taller (perspective scaling)
     }
     // Painter's algorithm: farthest (smallest y) first.
     std::sort(visitors.begin(), visitors.end(), [](const Visitor& a, const Visitor& b) { return a.feet.y < b.feet.y; });
     for (const Visitor& visitor : visitors) {
         drawPersonSilhouette(frameBuffer, visitor.feet, visitor.height, astroPalette::crowd);
-    }
-}
-
-void drawFenceWithLights(FrameBuffer& frameBuffer, double fenceTopY, double fenceBottomY, double gapStartX,
-                         double gapEndX) {
-    const double width = frameBuffer.getWidth();
-    const double postSpacing = 100.0;
-    const double postTopY = fenceTopY - 30.0;
-    const Color bulbColors[4] = {astroPalette::neonPink, astroPalette::gold, astroPalette::neonCyan,
-                                 astroPalette::neonOrange};
-
-    // Rails on each side of the path opening.
-    for (double railY : {fenceTopY + 12.0, fenceBottomY - 10.0}) {
-        drawThickLine(frameBuffer, {0.0, railY}, {gapStartX, railY}, 2.0, astroPalette::steelDark);
-        drawThickLine(frameBuffer, {gapEndX, railY}, {width, railY}, 2.0, astroPalette::steelDark);
-    }
-
-    // Collect post positions, skipping the path gap.
-    std::vector<double> posts;
-    for (double x = 30.0; x < width; x += postSpacing) {
-        if (x > gapStartX - 10.0 && x < gapEndX + 10.0) continue;
-        posts.push_back(x);
-    }
-
-    int bulbIndex = 0;
-    for (std::size_t index = 0; index < posts.size(); ++index) {
-        const double postX = posts[index];
-        drawThickLine(frameBuffer, {postX, postTopY}, {postX, fenceBottomY}, 3.0, astroPalette::steelDark);
-        fillCircle(frameBuffer, roundToInt(postX), roundToInt(postTopY), 4, astroPalette::gold);
-
-        // String light to the next post on the same side of the gap.
-        if (index + 1 >= posts.size()) continue;
-        const double nextX = posts[index + 1];
-        if (nextX - postX > postSpacing * 1.5) continue;  // the path gap lies between these posts
-
-        // A cubic Bezier whose inner control points hang below the posts makes a natural sag.
-        const Vec2 start{postX, postTopY};
-        const Vec2 end{nextX, postTopY};
-        const std::vector<Vec2> wire = sampleCubicBezier(start, start + Vec2(30.0, 34.0), end + Vec2(-30.0, 34.0), end, 20);
-        drawPolylineBresenham(frameBuffer, wire, astroPalette::ink);
-        for (std::size_t bulb = 2; bulb + 1 < wire.size(); bulb += 3) {
-            const Color bulbColor = bulbColors[bulbIndex++ % 4];
-            blendCircle(frameBuffer, roundToInt(wire[bulb].x), roundToInt(wire[bulb].y) + 3, 7, bulbColor, 0.3);
-            fillCircle(frameBuffer, roundToInt(wire[bulb].x), roundToInt(wire[bulb].y) + 3, 3, makeTint(bulbColor, 0.35));
-        }
     }
 }
 

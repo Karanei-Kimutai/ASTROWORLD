@@ -17,6 +17,7 @@ add_executable(astroworld
     # core: colour, frame buffer
     src/core/color.cpp
     src/core/frameBuffer.cpp
+    src/core/coverageMask.cpp
     # raster: lines, circles/ellipses, clipping, thick strokes
     src/raster/lines.cpp
     src/raster/circles.cpp
@@ -39,6 +40,7 @@ add_executable(astroworld
     src/scene/carousel.cpp
     src/scene/astroHead.cpp
     src/scene/foreground.cpp
+    src/scene/carnivalProps.cpp
     src/scene/astroworldScene.cpp
     # showcases
     src/showcase/algorithmShowcase.cpp

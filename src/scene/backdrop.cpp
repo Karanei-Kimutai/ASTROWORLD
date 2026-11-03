@@ -1,11 +1,12 @@
 /**
  * @file backdrop.cpp
- * @brief Sky, stars, searchlights, skyline, ground and entrance path.
+ * @brief Sky, clouds, stars, searchlights, skyline, fence and ground.
  */
 #include "scene/backdrop.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <vector>
 
 #include "core/simpleRandom.h"
@@ -15,49 +16,82 @@
 #include "raster/lines.h"
 #include "raster/strokes.h"
 
-void drawSkyGradient(FrameBuffer& frameBuffer, int horizonY) {
-    const double width = frameBuffer.getWidth();
-    const std::vector<Vec2> skyRectangle = {{0.0, 0.0}, {width, 0.0}, {width, double(horizonY)}, {0.0, double(horizonY)}};
+void drawSky(FrameBuffer& frameBuffer, int horizonY, double nightAmount) {
+    // First blend each gradient stop between its day and night colour...
+    const Color topColor = lerpColor(astroPalette::daySkyTop, astroPalette::nightSkyTop, nightAmount);
+    const Color midColor = lerpColor(astroPalette::daySkyMid, astroPalette::nightSkyMid, nightAmount);
+    const Color horizonColor = lerpColor(astroPalette::daySkyHorizon, astroPalette::nightSkyHorizon, nightAmount);
 
-    // Fragment shader: colour depends only on height. Two HSV segments give
-    // indigo -> violet at the top and violet -> magenta -> orange at the horizon.
-    const PixelShader skyShader = [horizonY](int, int y) {
+    // ...then interpolate down the screen in HSV space (keeps the blues saturated).
+    const PixelShader skyShader = [=](int, int y) {
         const double t = std::clamp(static_cast<double>(y) / horizonY, 0.0, 1.0);
-        if (t < 0.55) return lerpColorHsv(astroPalette::skyTop, astroPalette::skyMid, t / 0.55);
-        return lerpColorHsv(astroPalette::skyMid, astroPalette::skyHorizon, (t - 0.55) / 0.45);
+        if (t < 0.5) return lerpColorHsv(topColor, midColor, t / 0.5);
+        return lerpColorHsv(midColor, horizonColor, (t - 0.5) / 0.5);
     };
-    fillPolygon(frameBuffer, skyRectangle, skyShader);
+    const double width = frameBuffer.getWidth();
+    fillPolygon(frameBuffer, {{0.0, 0.0}, {width, 0.0}, {width, double(horizonY)}, {0.0, double(horizonY)}}, skyShader);
 }
 
-void drawHorizonGlow(FrameBuffer& frameBuffer, const Vec2& center, int radiusX, int radiusY) {
-    // Many faint, shrinking ellipses: overlapping alpha builds a smooth falloff.
-    const int layerCount = 10;
-    for (int layer = 0; layer < layerCount; ++layer) {
-        const double t = static_cast<double>(layer) / layerCount;
-        const Color glowColor = lerpColor(astroPalette::neonPink, astroPalette::neonOrange, t);
-        blendEllipse(frameBuffer, roundToInt(center.x), roundToInt(center.y), roundToInt(radiusX * (1.0 - t * 0.8)),
-                     roundToInt(radiusY * (1.0 - t * 0.8)), glowColor, 0.07);
+void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity) {
+    if (opacity <= 0.0) return;
+    SimpleRandom random(seed);
+    const int cloudCount = 7;
+    for (int cloud = 0; cloud < cloudCount; ++cloud) {
+        // Spread clouds evenly across the width with some jitter.
+        const double cloudWidth = random.nextRange(170.0, 340.0);
+        const double centerX = (cloud + 0.5) * frameBuffer.getWidth() / cloudCount + random.nextRange(-60.0, 60.0);
+        const double baseY = random.nextRange(horizonY * 0.18, horizonY * 0.8);
+
+        // Puffs: taller toward the middle of the cloud, flat along the base.
+        struct Puff {
+            double x, y, radius;
+        };
+        std::vector<Puff> puffs;
+        const int puffCount = 16;
+        for (int index = 0; index < puffCount; ++index) {
+            const double across = random.nextRange(-0.5, 0.5);
+            const double heightProfile = 1.0 - std::fabs(across) * 1.6;
+            const double radius = cloudWidth * random.nextRange(0.10, 0.19) * (0.6 + 0.4 * std::max(0.0, heightProfile));
+            puffs.push_back({centerX + across * cloudWidth,
+                             baseY - radius * 0.4 - random.nextRange(0.0, 0.32) * cloudWidth * std::max(0.0, heightProfile),
+                             radius});
+        }
+        // Shadowed undersides first, then the sunlit tops slightly up and to the left.
+        for (const Puff& puff : puffs) {
+            blendSoftEllipse(frameBuffer, puff.x, puff.y + puff.radius * 0.3, puff.radius * 1.1, puff.radius * 0.85,
+                             astroPalette::cloudShadow, 0.75 * opacity);
+        }
+        for (const Puff& puff : puffs) {
+            blendSoftEllipse(frameBuffer, puff.x - puff.radius * 0.12, puff.y - puff.radius * 0.15, puff.radius,
+                             puff.radius * 0.8, astroPalette::cloudLight, 0.85 * opacity);
+        }
     }
 }
 
-void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
+void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity) {
+    if (opacity <= 0.0) return;
     SimpleRandom random(seed);
-    const int starCount = 260;
-    const double starBandHeight = horizonY * 0.62;  // stars fade out before the bright horizon
-    const Color starTints[3] = {astroPalette::white, Color{200, 240, 255}, Color{255, 210, 240}};
+    const int starCount = 420;
+    const Color starTints[3] = {astroPalette::white, Color{200, 225, 255}, Color{255, 240, 220}};
 
     for (int star = 0; star < starCount; ++star) {
         const int x = random.nextInt(0, frameBuffer.getWidth() - 1);
-        const int y = random.nextInt(0, static_cast<int>(starBandHeight));
-        const double heightFade = 1.0 - y / starBandHeight;
-        const double brightness = random.nextRange(0.35, 1.0) * (0.35 + 0.65 * heightFade);
+        const int y = random.nextInt(0, horizonY - 1);
+        const double brightness = random.nextRange(0.25, 1.0) * opacity;
         const Color tint = starTints[random.nextInt(0, 2)];
 
-        if (random.nextDouble() < 0.08) {
-            // Sparkle: a small plus sign made of two Bresenham lines.
-            const int armLength = random.nextInt(2, 4);
-            rasterizeLineBresenham(x - armLength, y, x + armLength, y, makeBlendPlotter(frameBuffer, tint, brightness * 0.7));
-            rasterizeLineBresenham(x, y - armLength, x, y + armLength, makeBlendPlotter(frameBuffer, tint, brightness * 0.7));
+        if (random.nextDouble() < 0.06) {
+            // Bright star: a soft core plus a 4-point flare. The plot callback
+            // sets alpha from the distance to the centre, so the arms fade out.
+            const int armLength = random.nextInt(6, 16);
+            const PlotCallback flarePlotter = [&](int px, int py) {
+                const double distance = std::abs(px - x) + std::abs(py - y);
+                const double fade = std::max(0.0, 1.0 - distance / armLength);
+                frameBuffer.blendPixel(px, py, tint, opacity * fade * fade);
+            };
+            rasterizeLineBresenham(x - armLength, y, x + armLength, y, flarePlotter);
+            rasterizeLineBresenham(x, y - armLength, x, y + armLength, flarePlotter);
+            blendSoftEllipse(frameBuffer, x, y, 4.0, 4.0, tint, 0.8 * opacity);
             frameBuffer.setPixel(x, y, astroPalette::white);
         } else {
             frameBuffer.blendPixel(x, y, tint, brightness);
@@ -66,23 +100,25 @@ void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
 }
 
 void drawSearchlight(FrameBuffer& frameBuffer, const Vec2& origin, double angleDegrees, double spreadDegrees,
-                     Color beamColor) {
+                     Color beamColor, double opacity) {
+    if (opacity <= 0.0) return;
     const ClipWindow screenWindow{0.0, 0.0, frameBuffer.getWidth() - 1.0, frameBuffer.getHeight() - 1.0};
     const int rayCount = 70;
     const double rayLength = 2200.0;  // far beyond the screen - clipping trims it
 
     for (int ray = 0; ray < rayCount; ++ray) {
-        const double angle = (angleDegrees + spreadDegrees * (static_cast<double>(ray) / (rayCount - 1) - 0.5)) * pi / 180.0;
+        const double angle =
+            (angleDegrees + spreadDegrees * (static_cast<double>(ray) / (rayCount - 1) - 0.5)) * pi / 180.0;
         // Screen y points down, so "up" is -sin(angle).
         Vec2 rayStart = origin;
         Vec2 rayEnd = origin + Vec2(std::cos(angle), -std::sin(angle)) * rayLength;
         if (!clipLineCohenSutherland(rayStart, rayEnd, screenWindow)) continue;
         rasterizeLineDda(roundToInt(rayStart.x), roundToInt(rayStart.y), roundToInt(rayEnd.x), roundToInt(rayEnd.y),
-                         makeBlendPlotter(frameBuffer, beamColor, 0.03));
+                         makeBlendPlotter(frameBuffer, beamColor, 0.03 * opacity));
     }
 }
 
-void drawSkyline(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
+void drawSkyline(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, Color color) {
     SimpleRandom random(seed);
     const double width = frameBuffer.getWidth();
     const double baseY = horizonY + 4.0;
@@ -96,7 +132,7 @@ void drawSkyline(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
         if (pieceKind == 0) {
             // Circus tent: a triangle peak.
             const double tentWidth = random.nextRange(50.0, 100.0);
-            const double tentHeight = random.nextRange(30.0, 60.0);
+            const double tentHeight = random.nextRange(25.0, 50.0);
             outline.push_back({cursorX, horizonY - 8.0});
             outline.push_back({cursorX + tentWidth * 0.5, horizonY - 8.0 - tentHeight});
             outline.push_back({cursorX + tentWidth, horizonY - 8.0});
@@ -104,7 +140,7 @@ void drawSkyline(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
         } else if (pieceKind == 1) {
             // Flat-roofed building.
             const double buildingWidth = random.nextRange(30.0, 70.0);
-            const double buildingHeight = random.nextRange(25.0, 55.0);
+            const double buildingHeight = random.nextRange(25.0, 50.0);
             outline.push_back({cursorX, horizonY - buildingHeight});
             outline.push_back({cursorX + buildingWidth, horizonY - buildingHeight});
             cursorX += buildingWidth;
@@ -120,37 +156,62 @@ void drawSkyline(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed) {
     }
     outline.push_back({width, baseY});
     // The outline is highly CONCAVE - scan-line fill handles it with the even-odd rule.
-    fillPolygon(frameBuffer, outline, astroPalette::silhouette);
+    fillPolygon(frameBuffer, outline, color);
 }
 
-void drawGround(FrameBuffer& frameBuffer, int horizonY) {
+void drawHorizonFence(FrameBuffer& frameBuffer, int horizonY, int fenceHeight) {
+    const int width = frameBuffer.getWidth();
+    const int topY = horizonY - fenceHeight;
+    // Two horizontal rails (Bresenham, 2 px thick each).
+    for (int railY : {topY + 6, horizonY - 8}) {
+        drawLineBresenham(frameBuffer, 0, railY, width - 1, railY, astroPalette::fenceBlack);
+        drawLineBresenham(frameBuffer, 0, railY + 1, width - 1, railY + 1, astroPalette::fenceBlack);
+    }
+    // Pickets every 7 px with pointed tips; thicker posts with ball caps every 140 px.
+    for (int x = 2; x < width; x += 7) {
+        drawLineBresenham(frameBuffer, x, topY + 2, x, horizonY, astroPalette::fenceBlack);
+        frameBuffer.setPixel(x, topY, astroPalette::fenceBlack);
+    }
+    for (int x = 40; x < width; x += 140) {
+        drawThickLine(frameBuffer, {double(x), double(topY - 4)}, {double(x), double(horizonY)}, 2.5, astroPalette::fenceBlack);
+        fillCircle(frameBuffer, x, topY - 7, 4, astroPalette::fenceBlack);
+    }
+}
+
+void drawGround(FrameBuffer& frameBuffer, int horizonY, double nightAmount, std::uint32_t seed) {
     const double width = frameBuffer.getWidth();
     const double height = frameBuffer.getHeight();
-    const std::vector<Vec2> groundRectangle = {{0.0, double(horizonY)}, {width, double(horizonY)}, {width, height}, {0.0, height}};
-    const PixelShader groundShader = [horizonY, height](int, int y) {
-        const double t = std::clamp((y - horizonY) / (height - horizonY), 0.0, 1.0);
-        return lerpColor(astroPalette::groundFar, astroPalette::groundNear, t);
-    };
-    fillPolygon(frameBuffer, groundRectangle, groundShader);
-}
+    const Color farColor = lerpColor(astroPalette::dayGroundFar, astroPalette::nightGroundFar, nightAmount);
+    const Color nearColor = lerpColor(astroPalette::dayGroundNear, astroPalette::nightGroundNear, nightAmount);
+    fillPolygon(frameBuffer, {{0.0, double(horizonY)}, {width, double(horizonY)}, {width, height}, {0.0, height}},
+                [=](int, int y) { return lerpColor(farColor, nearColor, std::clamp((y - horizonY) / (height - horizonY), 0.0, 1.0)); });
 
-void drawEntrancePath(FrameBuffer& frameBuffer, int topY, double topLeftX, double topRightX, double bottomLeftX,
-                      double bottomRightX) {
-    const double bottomY = frameBuffer.getHeight();
-    const std::vector<Vec2> pathShape = {{topLeftX, double(topY)}, {topRightX, double(topY)}, {bottomRightX, bottomY}, {bottomLeftX, bottomY}};
+    // Concrete expansion joints converging toward a vanishing point at the head (one-point perspective).
+    const Vec2 vanishingPoint{width * 0.5, double(horizonY) - 60.0};
+    const Color jointColor = makeShade(nearColor, 0.18);
+    for (int joint = -6; joint <= 6; ++joint) {
+        if (joint == 0) continue;
+        Vec2 jointStart = lerpVec2(vanishingPoint, {width * 0.5 + joint * 260.0, height}, 0.45);
+        Vec2 jointEnd{width * 0.5 + joint * 260.0, height};
+        const ClipWindow groundWindow{0.0, double(horizonY), width - 1.0, height - 1.0};
+        if (clipLineCohenSutherland(jointStart, jointEnd, groundWindow)) {
+            rasterizeLineDda(roundToInt(jointStart.x), roundToInt(jointStart.y), roundToInt(jointEnd.x),
+                             roundToInt(jointEnd.y), makeBlendPlotter(frameBuffer, jointColor, 0.35));
+        }
+    }
 
-    // Tile lines at sqrt-spaced depths: equal steps in sqrt(depth) are close
-    // together near the horizon and far apart near the viewer, imitating perspective.
-    const PixelShader pathShader = [topY, bottomY](int, int y) {
-        const double depth = std::clamp((y - topY) / (bottomY - topY), 0.0, 1.0);
-        const double tileCoordinate = std::sqrt(depth) * 12.0;
-        const bool onTileLine = tileCoordinate - std::floor(tileCoordinate) < 0.08;
-        const Color base = lerpColor(makeShade(astroPalette::pathColor, 0.35), astroPalette::pathColor, depth);
-        return onTileLine ? makeShade(base, 0.35) : base;
-    };
-    fillPolygon(frameBuffer, pathShape, pathShader);
-
-    // Neon edging along both sides of the path.
-    drawThickLine(frameBuffer, {topLeftX, double(topY)}, {bottomLeftX, bottomY}, 1.6, astroPalette::neonPink);
-    drawThickLine(frameBuffer, {topRightX, double(topY)}, {bottomRightX, bottomY}, 1.6, astroPalette::neonPink);
+    // Popcorn: more and bigger kernels nearer the viewer (perspective scaling).
+    SimpleRandom random(seed);
+    const Color kernelColor = lerpColor(Color{255, 246, 214}, Color{120, 110, 90}, nightAmount);
+    for (int kernel = 0; kernel < 700; ++kernel) {
+        const double depth = std::sqrt(random.nextDouble());  // biased toward the front
+        const double y = horizonY + depth * (height - horizonY);
+        const double x = random.nextRange(0.0, width);
+        const int size = depth < 0.5 ? 0 : depth < 0.85 ? 1 : 2;
+        if (size == 0) {
+            frameBuffer.blendPixel(roundToInt(x), roundToInt(y), kernelColor, 0.8);
+        } else {
+            fillCircle(frameBuffer, roundToInt(x), roundToInt(y), size, kernelColor);
+        }
+    }
 }

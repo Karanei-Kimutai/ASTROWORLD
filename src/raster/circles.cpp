@@ -8,6 +8,8 @@
 #include <functional>
 #include <vector>
 
+#include "core/vec2.h"
+
 namespace {
 
 /**
@@ -184,4 +186,18 @@ void fillEllipse(FrameBuffer& frameBuffer, int centerX, int centerY, int radiusX
 void blendEllipse(FrameBuffer& frameBuffer, int centerX, int centerY, int radiusX, int radiusY, Color color,
                   double alpha) {
     rasterizeEllipseFilled(centerX, centerY, radiusX, radiusY, makeBlendSpanWriter(frameBuffer, color, alpha));
+}
+
+void blendSoftEllipse(FrameBuffer& frameBuffer, double centerX, double centerY, double radiusX, double radiusY,
+                      Color color, double maxAlpha) {
+    if (radiusX < 0.5 || radiusY < 0.5) return;
+    rasterizeEllipseFilled(roundToInt(centerX), roundToInt(centerY), roundToInt(radiusX), roundToInt(radiusY),
+                           [&](int y, int xStart, int xEnd) {
+                               for (int x = xStart; x <= xEnd; ++x) {
+                                   const double du = (x - centerX) / radiusX;
+                                   const double dv = (y - centerY) / radiusY;
+                                   const double falloff = std::max(0.0, 1.0 - (du * du + dv * dv));
+                                   frameBuffer.blendPixel(x, y, color, maxAlpha * falloff * falloff);
+                               }
+                           });
 }

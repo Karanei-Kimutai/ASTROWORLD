@@ -3,3 +3,5 @@ output/
 *.ppm
 .vscode/
 .idea/
+*:Zone.Identifier
+docs/references/
