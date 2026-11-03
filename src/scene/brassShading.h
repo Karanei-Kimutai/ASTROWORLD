@@ -1,5 +1,5 @@
 /**
- * @file goldShading.h
+ * @file brassShading.h
  * @brief Faux-lit matte-brass surface shader for the inflatable head and its dreads.
  *
  * CP1 has no 3D geometry yet, so a 2D shape is treated as if it were the
