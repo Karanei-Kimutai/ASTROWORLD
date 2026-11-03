@@ -5,6 +5,7 @@
 #include "math/matrix4.h"
 
 #include <cmath>
+#include <utility>
 
 Matrix4::Matrix4()
     : elements{{1.0, 0.0, 0.0, 0.0}, {0.0, 1.0, 0.0, 0.0}, {0.0, 0.0, 1.0, 0.0}, {0.0, 0.0, 0.0, 1.0}} {}
@@ -112,4 +113,79 @@ Vec3 Matrix4::transformDirection(const Vec3& direction) const {
     return {elements[0][0] * direction.x + elements[0][1] * direction.y + elements[0][2] * direction.z,
             elements[1][0] * direction.x + elements[1][1] * direction.y + elements[1][2] * direction.z,
             elements[2][0] * direction.x + elements[2][1] * direction.y + elements[2][2] * direction.z};
+}
+
+Matrix4 Matrix4::lookAt(const Vec3& eye, const Vec3& target, const Vec3& up) {
+    const Vec3 forward = (target - eye).normalized();
+    const Vec3 right = crossProduct(forward, up).normalized();
+    const Vec3 trueUp = crossProduct(right, forward);
+    // Rows are the camera axes (a rotation's inverse is its transpose); the last
+    // column moves the eye to the origin.
+    Matrix4 result;
+    const Vec3 rows[3] = {right, trueUp, -forward};
+    for (int row = 0; row < 3; ++row) {
+        result.elements[row][0] = rows[row].x;
+        result.elements[row][1] = rows[row].y;
+        result.elements[row][2] = rows[row].z;
+        result.elements[row][3] = -dotProduct(rows[row], eye);
+    }
+    return result;
+}
+
+Matrix4 Matrix4::fromBasis(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis, const Vec3& origin) {
+    Matrix4 result;
+    const Vec3 columns[4] = {xAxis, yAxis, zAxis, origin};
+    for (int column = 0; column < 4; ++column) {
+        result.elements[0][column] = columns[column].x;
+        result.elements[1][column] = columns[column].y;
+        result.elements[2][column] = columns[column].z;
+    }
+    return result;
+}
+
+Matrix4 Matrix4::inverse() const {
+    // Augment [A | I] and row-reduce A to I; the right half becomes A^-1.
+    double augmented[4][8];
+    for (int row = 0; row < 4; ++row) {
+        for (int column = 0; column < 4; ++column) {
+            augmented[row][column] = elements[row][column];
+            augmented[row][column + 4] = row == column ? 1.0 : 0.0;
+        }
+    }
+    for (int pivotColumn = 0; pivotColumn < 4; ++pivotColumn) {
+        // Partial pivoting: use the row with the largest value for numerical stability.
+        int pivotRow = pivotColumn;
+        for (int row = pivotColumn + 1; row < 4; ++row) {
+            if (std::fabs(augmented[row][pivotColumn]) > std::fabs(augmented[pivotRow][pivotColumn])) pivotRow = row;
+        }
+        if (std::fabs(augmented[pivotRow][pivotColumn]) < 1e-12) return Matrix4();  // singular
+        for (int column = 0; column < 8; ++column) std::swap(augmented[pivotColumn][column], augmented[pivotRow][column]);
+
+        const double pivot = augmented[pivotColumn][pivotColumn];
+        for (int column = 0; column < 8; ++column) augmented[pivotColumn][column] /= pivot;
+        for (int row = 0; row < 4; ++row) {
+            if (row == pivotColumn) continue;
+            const double factor = augmented[row][pivotColumn];
+            for (int column = 0; column < 8; ++column) augmented[row][column] -= factor * augmented[pivotColumn][column];
+        }
+    }
+    Matrix4 result;
+    for (int row = 0; row < 4; ++row) {
+        for (int column = 0; column < 4; ++column) result.elements[row][column] = augmented[row][column + 4];
+    }
+    return result;
+}
+
+void Matrix4::toColumnMajor(float output[16]) const {
+    for (int column = 0; column < 4; ++column) {
+        for (int row = 0; row < 4; ++row) output[column * 4 + row] = static_cast<float>(elements[row][column]);
+    }
+}
+
+Matrix4 Matrix4::transposed() const {
+    Matrix4 result;
+    for (int row = 0; row < 4; ++row) {
+        for (int column = 0; column < 4; ++column) result.elements[row][column] = elements[column][row];
+    }
+    return result;
 }

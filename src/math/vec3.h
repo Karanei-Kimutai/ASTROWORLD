@@ -21,6 +21,12 @@ struct Vec3 {
     Vec3 operator-(const Vec3& other) const { return {x - other.x, y - other.y, z - other.z}; }
     Vec3 operator-() const { return {-x, -y, -z}; }
     Vec3 operator*(double scalar) const { return {x * scalar, y * scalar, z * scalar}; }
+    Vec3& operator+=(const Vec3& other) {
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        return *this;
+    }
 
     double length() const { return std::sqrt(x * x + y * y + z * z); }
     Vec3 normalized() const {
@@ -35,3 +41,6 @@ inline double dotProduct(const Vec3& a, const Vec3& b) { return a.x * b.x + a.y 
 inline Vec3 crossProduct(const Vec3& a, const Vec3& b) {
     return {a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x};
 }
+
+/** @brief Linear interpolation a + (b - a) * t. */
+inline Vec3 lerpVec3(const Vec3& a, const Vec3& b, double t) { return a + (b - a) * t; }

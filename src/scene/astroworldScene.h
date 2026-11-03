@@ -4,14 +4,12 @@
  */
 #pragma once
 
+#include "animation/astroworldTimeline.h"
 #include "core/frameBuffer.h"
 
 /** @brief Default output resolution (720p, 16:9). */
 inline constexpr int sceneWidth = 1280;
 inline constexpr int sceneHeight = 720;
-
-/** @brief Length of one full animation loop (day -> dusk -> night -> dawn), in seconds. */
-inline constexpr double animationLoopSeconds = 30.0;
 
 /** @brief Everything that decides what one frame looks like. */
 struct SceneSettings {

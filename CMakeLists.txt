@@ -1,11 +1,10 @@
 # ASTROWORLD - Computer Graphics capstone
-# Checkpoint 1 (windowed variant): the pure C++ software rasterizer, plus an
-# SDL2 window that displays its frame buffer live.
 #
 # Targets:
 #   astroworldCore    static library - every algorithm and scene component (no dependencies)
-#   astroworld        writes all CP1 images as PPM files (no dependencies)
-#   astroworldWindow  shows the images in a window (needs SDL2; skipped if not found)
+#   astroworld        CP1/CP2 software renderer: stills and animation frames as PPM (no dependencies)
+#   astroworldWindow  CP2 live player for the software renderer (needs SDL2; skipped if not found)
+#   astroworldGl      CP3 real-time 3D park in OpenGL 3.3 core (needs GLFW; skipped if not found)
 
 cmake_minimum_required(VERSION 3.16)
 project(ASTROWORLD LANGUAGES CXX)
@@ -26,6 +25,8 @@ add_library(astroworldCore STATIC
     # math: 2D (3x3) and 3D (4x4) homogeneous transformation matrices
     src/math/matrix3.cpp
     src/math/matrix4.cpp
+    # animation timeline shared by the software and OpenGL renderers
+    src/animation/astroworldTimeline.cpp
     # raster: lines, circles/ellipses, clipping, thick strokes
     src/raster/lines.cpp
     src/raster/circles.cpp
@@ -79,4 +80,22 @@ if(SDL2_FOUND)
     endif()
 else()
     message(STATUS "SDL2 not found - skipping astroworldWindow (install libsdl2-dev to build it)")
+endif()
+
+# Checkpoint 3: OpenGL 3.3 core renderer (needs GLFW; GL functions are loaded at runtime by our own loader).
+find_package(glfw3 3.3 QUIET)
+if(glfw3_FOUND)
+    add_executable(astroworldGl
+        src/glMain.cpp
+        src/gl/glFunctions.cpp
+        src/gl/glResources.cpp
+        src/mesh/meshBuilder.cpp
+        src/glScene/overlayImage.cpp
+        src/glScene/headModel.cpp
+        src/glScene/parkModels.cpp
+        src/glScene/astroworldPark.cpp
+    )
+    target_link_libraries(astroworldGl PRIVATE astroworldCore glfw ${CMAKE_DL_LIBS})
+else()
+    message(STATUS "GLFW not found - skipping astroworldGl (install libglfw3-dev to build it)")
 endif()

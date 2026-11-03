@@ -3,17 +3,26 @@
 #
 # The renderer streams raw PPM frames on stdout straight into ffmpeg, so no
 # frame files are written to disk. ffmpeg only ENCODES the video; every pixel
-# is still drawn by the pure C++ renderer.
+# is drawn by our own code (the CPU software renderer, or the OpenGL renderer).
 #
-# Usage: tools/makeVideo.sh [seconds] [fps]      (defaults: one 30 s loop at 30 fps)
+# Usage: tools/makeVideo.sh [seconds] [fps] [software|opengl]
+#        defaults: one 30 s loop at 30 fps, software renderer
 set -euo pipefail
 
 repoRoot="$(cd "$(dirname "$0")/.." && pwd)"
 seconds="${1:-30}"
 framesPerSecond="${2:-30}"
-renderer="$repoRoot/build/astroworld"
-videoFile="$repoRoot/output/astroworldAnimation.mp4"
-previewFile="$repoRoot/docs/screenshots/animationPreview.gif"
+rendererChoice="${3:-software}"
+
+if [ "$rendererChoice" = "opengl" ]; then
+    renderer="$repoRoot/build/astroworldGl"
+    videoFile="$repoRoot/output/astroworldAnimationGl.mp4"
+    previewFile="$repoRoot/docs/screenshots/animationPreviewGl.gif"
+else
+    renderer="$repoRoot/build/astroworld"
+    videoFile="$repoRoot/output/astroworldAnimation.mp4"
+    previewFile="$repoRoot/docs/screenshots/animationPreview.gif"
+fi
 
 [ -x "$renderer" ] || { echo "Build first: cmake -S . -B build && cmake --build build"; exit 1; }
 mkdir -p "$repoRoot/output" "$(dirname "$previewFile")"

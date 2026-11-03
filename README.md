@@ -2,6 +2,10 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
+![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+
+*Checkpoint 3: the park in real-time 3D with OpenGL. Below: the CP1/CP2 software renderer's version of the same scene.*
+
 ![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
 
 | Day (album cover) | Night (starfield artwork) |
@@ -31,7 +35,7 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
 | `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
-| `checkpoint-3` | **CP3 – OpenGL integration** | Components ported to OpenGL (GLFW + GLAD); real-time camera and perspective projection. |
+| `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | Prototype | All components combined into one interactive park. |
 | `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
 
@@ -39,7 +43,11 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 ## Building and running
 
-**Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. The renderer itself uses **no external libraries**. The live window (`astroworldWindow`) also needs **SDL2** (`sudo apt install libsdl2-dev`); without it CMake skips that target. `ffmpeg` is only used to encode the video and convert screenshots: every pixel is drawn by our own code.
+**Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. The software renderer uses **no external libraries**. Optional targets, which CMake skips when their library is missing:
+- `astroworldWindow` (live player for the software renderer) needs **SDL2**: `sudo apt install libsdl2-dev`
+- `astroworldGl` (CP3, OpenGL 3.3 core) needs **GLFW** and the Khronos GL headers: `sudo apt install libglfw3-dev` (the headers come with Mesa's dev packages)
+
+`ffmpeg` is only used to encode videos and convert screenshots: every pixel is drawn by our own code.
 
 ### With CMake
 
@@ -47,8 +55,10 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 cmake -S . -B build
 cmake --build build
 ./build/astroworld          # write every still image as a PPM file
-./build/astroworldWindow    # play the animation live in a window
+./build/astroworldWindow    # play the software-rendered animation live in a window
+./build/astroworldGl        # CP3: the 3D park in OpenGL
 ./tools/makeVideo.sh        # render the 30 s animation loop to output/astroworldAnimation.mp4
+./tools/makeVideo.sh 30 30 opengl   # ...or the OpenGL version to output/astroworldAnimationGl.mp4
 ```
 
 ### Without CMake (single command)
@@ -57,7 +67,36 @@ cmake --build build
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
 ```
 
-### Live window
+### OpenGL park (`astroworldGl`, Checkpoint 3)
+
+| Day | Night |
+|---|---|
+| ![OpenGL day](docs/screenshots/glDay.png) | ![OpenGL night](docs/screenshots/glNight.png) |
+| ![Aerial view](docs/screenshots/glAerial.png) | ![Ferris wheel at night](docs/screenshots/glFerrisNight.png) |
+
+| Input | Action |
+|---|---|
+| Mouse drag / scroll | Orbit the camera / zoom |
+| `W` `A` `S` `D` / `Q` `E` | Move the camera's target / up and down |
+| `C` | Cycle viewpoints: album cover, aerial, Ferris wheel, carousel |
+| `O` | Toggle automatic orbit |
+| `Space`, `←` / `→`, `↑` / `↓` | Play / pause, seek ±1 s, speed ×2 / ÷2 |
+| `1` / `2` | Jump to day / night |
+| `L` / `H` | Toggle the logo overlay / help panel |
+| `P` | Save a screenshot to `output/` |
+| `Esc` | Quit |
+
+Command-line options:
+- `--camera <0-3>` picks the starting viewpoint.
+- `--time <s>` sets the starting time.
+- `--capture <file.ppm>` renders one frame off-screen and exits.
+- `--animate <seconds> <fps> <dir | ->` renders a frame sequence, exactly like the software renderer.
+- `--duration <s>` closes the window after that many seconds and prints the average FPS.
+- `--software` forces Mesa's CPU rasterizer instead of the GPU.
+
+**GPU selection under WSL:** by default Mesa renders OpenGL on the CPU (`llvmpipe`). WSL's `d3d12` driver forwards OpenGL to the real GPU through `/dev/dxg`, so the program selects it automatically when that device exists (it sets `GALLIUM_DRIVER=d3d12` unless you have set it yourself).
+
+### Live window (software renderer)
 
 ![Window viewer at dusk](docs/screenshots/windowViewer.png)
 
@@ -117,6 +156,20 @@ PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extensi
 src/
 ├── main.cpp                    Command-line renderer: stills, or animation frames (--animate)
 ├── windowMain.cpp              Live SDL2 player for the animation (display stage only)
+├── glMain.cpp                  CP3: GLFW window + OpenGL context, interactive 3D park
+├── gl/
+│   ├── glFunctions.h/.cpp      Our own OpenGL 3.3 core function loader (what GLAD does)
+│   └── glResources.h/.cpp      RAII wrappers: shader programs, GPU meshes, textures, MSAA render target
+├── mesh/
+│   ├── meshData.h              Vertex format (position, normal, colour, UV), indexed meshes, transformed append
+│   └── meshBuilder.h/.cpp      Box, cylinder, cone, ellipsoid, torus, swept tube, quads, lines
+├── glScene/
+│   ├── shaders.h               GLSL: Blinn-Phong + point light + fog, procedural sky, overlays
+│   ├── astroworldPark.h/.cpp   Builds the GPU scene and draws the animated park each frame
+│   ├── headModel.h/.cpp        The head in 3D: features wrapped onto an ellipsoid, dread tubes, portal
+│   ├── parkModels.h/.cpp       3D rides and props
+│   ├── orbitCamera.h           Perspective orbit camera with viewpoint presets
+│   └── overlayImage.h/.cpp     Software-rendered images → RGBA textures (difference matting)
 ├── core/
 │   ├── vec2.h                  2D vector maths, pi, rounding helper
 │   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
@@ -129,7 +182,8 @@ src/
 │   └── matrix4.h/.cpp          3D homogeneous 4×4 matrices: rotations, orthographic and perspective projection
 ├── animation/
 │   ├── easing.h                Easing curves (smoothstep, quad, cubic, bounce), looping time, oscillators
-│   └── keyframeTrack.h         Keyframe tracks with per-segment easing
+│   ├── keyframeTrack.h         Keyframe tracks with per-segment easing
+│   └── astroworldTimeline.h/.cpp  Day/night, drop tower and coaster timing shared by BOTH renderers
 ├── raster/
 │   ├── rasterTypes.h           Plot/span callbacks: rasterization kept separate from shading
 │   ├── lines.h/.cpp            DDA and Bresenham lines
@@ -149,6 +203,7 @@ src/
 │   ├── astroworldScene.h/.cpp  Composes the park at any time t; the animation timeline lives here
 │   ├── backdrop.h/.cpp         Day/night sky, clouds, stars, searchlights, skyline, fence, plaza
 │   ├── astroHead.h/.cpp        The brass head: dreads, closed eyes, nose, glowing mouth portal
+│   ├── astroHeadShape.h        Head-unit shape data (dreads, doorway) shared by the 2D and 3D heads
 │   ├── brassShading.h          Matte-brass surface shader (faux lighting)
 │   ├── carnivalProps.h/.cpp    Rocket statue, big-top tent, park sign, bunting
 │   ├── ferrisWheel.h/.cpp      Ferris wheel (transformation hierarchy)
@@ -162,7 +217,7 @@ src/
     ├── colorShowcase.h/.cpp      Colour-theory demos
     └── transformShowcase.h/.cpp  CP2 transformation demos
 tools/exportScreenshots.sh      PPM → PNG for documentation
-tools/makeVideo.sh              Animation → MP4 (and README GIF), frames piped straight into ffmpeg
+tools/makeVideo.sh              Animation → MP4 (and README GIF) from either renderer, frames piped into ffmpeg
 docs/screenshots/               Checkpoint screenshots
 docs/references/                Reference artwork the scene is matched against (local only, not committed)
 ```
@@ -176,7 +231,7 @@ docs/references/                Reference artwork the scene is matched against (
 |---|---|
 | **Raster vs. vector** | The bitmap font ([bitmapFont.cpp](src/text/bitmapFont.cpp)) is a *raster* font: it goes blocky when scaled (see the captions). The logo ([astroWordmark.cpp](src/text/astroWordmark.cpp)) is *vector*: its letters are described by curves and polygons, so it stays smooth at any size. |
 | **Frame buffer** | [frameBuffer.h](src/core/frameBuffer.h): a row-major pixel array, the CPU-side equivalent of the VRAM frame buffer. "Display" means writing it to a PPM file, or, in the windowed build, uploading it to video memory as a texture (and reading it back with `--capture`). |
-| **CPU vs. GPU** | CP1 and CP2 rasterize every pixel sequentially on the CPU: about 60 ms per frame, so the live window manages ~15–20 fps. CP3 moves the same work to the GPU, where vertices and fragments are processed in parallel. |
+| **CPU vs. GPU** | Measured on this machine: the CP2 software renderer manages ~15–20 fps. The CP3 OpenGL renderer, a far heavier 3D scene, runs at **~83 fps on the GPU** (AMD Radeon via D3D12) but only **~14 fps** when the same OpenGL code runs on Mesa's CPU rasterizer (`--software`). The GPU processes thousands of vertices and fragments in parallel. |
 
 ### Colour theory and models
 | Concept | Implementation |
@@ -223,12 +278,40 @@ docs/references/                Reference artwork the scene is matched against (
 | **4×4 matrices in 3D** | Carousel horses: `Rx(tilt) · Ry(θ + i·45°)` places each horse in 3D; depth (z) sorts them back to front |
 | **Shear, reflection** | Transformation showcase (panel 4) |
 
-### Projections (preview for CP3)
+### Projections
 | Concept | Where it is used |
 |---|---|
-| Parallel (orthographic) | Carousel horses are projected by dropping z after the view rotation; the showcase cube uses `Matrix4::orthographic` |
-| Perspective, vanishing points | The showcase cube and ground grid use `Matrix4::perspective` and the divide by *w*: parallel grid lines converge on one vanishing point. The plaza joints and crowd scaling imitate one-point perspective. |
-| Viewport transform | Normalised device coordinates `[−1, 1]` are mapped to panel pixels (y flipped) |
+| Parallel (orthographic) | CP2 carousel horses (z dropped after the view rotation); the showcase cube uses `Matrix4::orthographic` |
+| **Perspective, centre of projection, frustum** | CP3: every frame uses `Matrix4::perspective` (45° vertical field of view, near 0.1, far 400) with the camera's eye as the centre of projection. The GPU clips triangles to the view frustum and divides by *w*, so the fence, coaster and plaza converge toward vanishing points. |
+| Camera / view transform | `Matrix4::lookAt` builds the view matrix from the orbit camera's eye (spherical coordinates around a target) |
+| Viewport transform | NDC `[−1, 1]` → pixels: `glViewport` in OpenGL; done by hand in the transformation showcase |
+
+### OpenGL (CP3)
+| Concept | Implementation |
+|---|---|
+| Programmable pipeline | [shaders.h](src/glScene/shaders.h): the vertex shader applies `projection · view · model`; the fragment shader lights each sample |
+| Function loading | [glFunctions.h](src/gl/glFunctions.h): every GL ≥ 1.2 function is looked up in the driver at runtime, as GLAD does |
+| Vertex buffers | [glResources.cpp](src/gl/glResources.cpp): meshes go into VBOs/EBOs, described by a VAO (position, normal, colour, UV attributes) |
+| Hidden-surface removal | The **depth buffer** (z-buffer) replaces CP1/CP2's painter's algorithm |
+| **Lighting (Phong model)** | Blinn-Phong per fragment: ambient + diffuse + specular from the sun or moon, plus an attenuated **point light** in the mouth that lights the face and crowd at night |
+| Smooth shading | Per-vertex normals interpolated across triangles and lit per pixel (Phong shading); tube and ellipsoid normals are computed analytically |
+| Normal transformation | Normals use the inverse-transpose of the model matrix (in the shader, and in `MeshData::append`), so ellipsoid features stay correctly lit |
+| **Texture mapping** | The park sign's lettering is a texture with UV coordinates; the logo and captions are textured screen-space quads |
+| **Anti-aliasing (MSAA)** | The scene renders into an off-screen 4× multisampled frame buffer object, resolved and then shown or read back |
+| Procedural sky | A full-screen triangle reconstructs each pixel's view ray with the inverse view-projection matrix, then adds a gradient, value-noise clouds and twinkling stars |
+| Fog | Exponential distance fog toward the horizon colour (aerial perspective) |
+| Frame buffer read-back | `glReadPixels` turns GPU frames back into our `FrameBuffer` for screenshots and video |
+
+### Reusing earlier work in CP3
+| From | Used in the OpenGL renderer for |
+|---|---|
+| `Matrix4` (CP2) | Every model, view and projection matrix, uploaded column-major. GLM is not needed. |
+| Catmull–Rom splines (CP1) | 3D coaster track and the dreads (`sampleCatmullRomSpline3D`) |
+| Bézier curves (CP1) | Closed-eye lash lines, the doorway arch, bunting sag |
+| `astroworldTimeline` (CP2) | The same day/night keyframes, drop-tower keyframes and coaster physics, so both renderers stay in sync |
+| `astroHeadShape` (CP1/CP2) | The same dread centre lines and doorway outline, wrapped onto an ellipsoid |
+| Software renderer (CP1) | Draws the logo, captions, sign lettering and help panel; **difference matting** turns them into RGBA textures |
+| Palette and colour maths (CP1) | Vertex colours, day/night lerps, HSV-spaced gondola and car colours |
 
 ### Animation (CP2)
 | Concept | Where it is used |
@@ -254,7 +337,7 @@ docs/references/                Reference artwork the scene is matched against (
 
 ## How the software renderer maps to the rendering pipeline
 
-| Pipeline stage | In this project (CP1 + CP2) |
+| Pipeline stage | Software renderer (CP1 + CP2) |
 |---|---|
 | 1. Application | `renderAstroworldScene` decides what to draw and in what order |
 | 2. Vertex processing | Model matrices (`Matrix3`) move every shape's local points into screen space. Carousel horses go through model → view → parallel projection with `Matrix4`. |
@@ -265,6 +348,20 @@ docs/references/                Reference artwork the scene is matched against (
 | 7. Output operations | Overwrite, alpha-blend, or stencil-mask into the buffer (SSAA compositing of the logo) |
 | 8. Frame buffer | `FrameBuffer` |
 | 9. Display | `savePpm` writes the image file, `--animate` streams frames to ffmpeg, and the window uploads each frame to an SDL2 texture |
+
+The same nine stages in the **OpenGL renderer (CP3)**:
+
+| Pipeline stage | OpenGL renderer (CP3) |
+|---|---|
+| 1. Application | `AstroworldPark::render` animates the rides and issues draw calls (C++, CPU) |
+| 2. Vertex processing | The vertex shader computes `projection · view · model · position` and transforms normals |
+| 3. Primitive assembly | The GPU groups indices into triangles (`GL_TRIANGLES`) or lines (`GL_LINES`) |
+| 4. Clipping | Fixed-function clipping against the view frustum, then the perspective divide |
+| 5. Rasterization | Fixed-function, with 4 coverage samples per pixel (MSAA) |
+| 6. Fragment processing | The fragment shader runs Blinn-Phong, point-light, texture and fog maths |
+| 7. Output operations | Depth test, alpha blending for overlays, multisample resolve |
+| 8. Frame buffer | Our off-screen FBO (`RenderTarget`): multisampled colour + depth renderbuffers |
+| 9. Display | Blit to the window's default framebuffer with letterboxing, then `glfwSwapBuffers` |
 
 ---
 
@@ -349,3 +446,42 @@ Frame buffer and raster vs. vector graphics, RGB/HSV/CMYK colour models, tints/s
 - Move from flat 2D layers to a **3D park**: a perspective camera that can fly through, real depth testing (z-buffer) instead of the painter's algorithm, and frustum clipping.
 - Phong lighting on real meshes (the brass head, rides), Gouraud vs Phong shading, textures (the globe, the ground), MSAA, and a ray-traced still.
 - User interaction: camera controls and toggles for rides and time of day.
+
+### Checkpoint 3 – OpenGL integration
+
+**Current OpenGL implementation**
+- **Platform layer:** GLFW opens the window and an **OpenGL 3.3 core** context, and our own loader fetches the GL functions. A GLAD generator was not available offline, and writing the loader shows what such libraries actually do.
+- **GPU resources:**
+  - shader programs, plus vertex/index buffers described by VAOs
+  - textures
+  - a 4× MSAA off-screen frame buffer with depth
+  - all wrapped in small RAII classes, so nothing leaks
+- **The park in 3D, built procedurally from primitives (no model files):**
+  - the brass head (features on an ellipsoid, swept-tube dreads, glowing doorway)
+  - the Ferris wheel with level-hanging gondolas
+  - the teal truss coaster
+  - the drop tower and the carousel
+  - the rocket, the big top and the textured park sign
+  - bunting, the palisade fence, visitors and balloons
+- **Lighting:** Blinn-Phong sun or moon, an attenuated point light inside the mouth, emissive bulbs and portal, and distance fog. The sky is procedural: a gradient, noise clouds and twinkling stars.
+- **Animation:** the same animation as CP2, driven by the shared timeline. Rides move through `Matrix4` transformation hierarchies, the dreads are re-meshed each frame as they bend, visitors walk with swinging legs, and the 30 s day → night → dawn loop plays.
+
+**Animation / interaction evidence**
+- The GIF at the top of this README: the OpenGL renderer, first 12 s.
+- The full 30 s OpenGL video: `./tools/makeVideo.sh 30 30 opengl` produces `output/astroworldAnimationGl.mp4` (≈7 MB, not committed).
+- Interaction: an orbit, zoom and pan camera; four viewpoints; play, pause, seek and speed; toggles for the logo and help.
+- Performance: ~83 fps on the GPU against ~14 fps for the same code on the CPU (`astroworldGl --duration 6` prints the average).
+
+| Carousel close-up | Aerial view |
+|---|---|
+| ![Carousel](docs/screenshots/glCarousel.png) | ![Aerial](docs/screenshots/glAerial.png) |
+
+**GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-3
+
+**What remains (prototype and final)**
+- **Shading comparison:** switchable flat, Gouraud and Phong shading to show the difference (the course's shading-interpolation topic).
+- **More texture mapping:** the Earth texture on a 3D globe, ground detail (concrete joints and popcorn), the tent canvas.
+- **Shadows** from the sun (shadow mapping) and night searchlight beams.
+- **Head refinement:** a sculpted mesh instead of ellipsoid features for the nose and lips, and a real opening in the mouth.
+- **Ray-traced still:** chrome spheres and the brass head reflecting the park, rendered on the CPU (ray tracing and anti-aliasing topics).
+- **Polish and interaction:** ride on the coaster (first-person camera along the spline), click a ride to toggle it, and sound.

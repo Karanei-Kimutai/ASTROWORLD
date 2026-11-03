@@ -18,6 +18,9 @@
  *   Bunting          pennants flutter
  *   Searchlights     sweep back and forth (night)
  *   Sky              day -> dusk -> night -> dawn over a 30 s loop (keyframes)
+ *
+ * The keyframed and physics-driven parts come from animation/astroworldTimeline.h,
+ * which the OpenGL renderer shares.
  */
 #include "scene/astroworldScene.h"
 
@@ -25,7 +28,6 @@
 #include <string>
 
 #include "animation/easing.h"
-#include "animation/keyframeTrack.h"
 #include "scene/astroHead.h"
 #include "scene/backdrop.h"
 #include "scene/carnivalProps.h"
@@ -46,36 +48,10 @@ void drawCaption(FrameBuffer& frameBuffer, const std::string& text, int centerX,
     drawBitmapText(frameBuffer, text, left, top, pixelScale, astroPalette::white);
 }
 
-/** @brief Day -> dusk -> night -> dawn over one loop. */
-const KeyframeTrack& nightTrack() {
-    static const KeyframeTrack track = KeyframeTrack()
-                                           .addKey(0.0, 0.0)
-                                           .addKey(8.0, 0.0)                          // day
-                                           .addKey(13.0, 1.0, easing::smoothStep)     // dusk
-                                           .addKey(25.0, 1.0)                         // night
-                                           .addKey(animationLoopSeconds, 0.0, easing::smoothStep);  // dawn
-    return track;
-}
-
-/**
- * @brief Drop tower seat height over one 9-second ride cycle (0 = bottom, 1 = top).
- *        Slow eased climb, a pause at the top, then a drop that accelerates like
- *        free fall and bounces on the brakes (easeOutBounce).
- */
-const KeyframeTrack& dropTowerTrack() {
-    static const KeyframeTrack track = KeyframeTrack()
-                                           .addKey(0.0, 0.0)
-                                           .addKey(3.5, 1.0, easing::easeInOutCubic)  // climb
-                                           .addKey(4.6, 1.0)                          // suspense at the top
-                                           .addKey(6.0, 0.0, easing::easeOutBounce)   // DROP
-                                           .addKey(9.0, 0.0);                         // unload / reload
-    return track;
-}
-
 }  // namespace
 
 SceneSettings sampleAnimation(double timeSeconds) {
-    return SceneSettings{nightTrack().sample(wrapTime(timeSeconds, animationLoopSeconds)), timeSeconds};
+    return SceneSettings{nightAmountAt(timeSeconds), timeSeconds};
 }
 
 void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settings) {
@@ -108,14 +84,13 @@ void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settin
     dropTower.groundY = horizonY;
     const double seatBottom = horizonY - 40.0;
     const double seatTop = dropTower.topY + 40.0;
-    dropTower.seatY = seatBottom + (seatTop - seatBottom) * dropTowerTrack().sample(wrapTime(time, dropTowerTrack().duration()));
+    dropTower.seatY = seatBottom + (seatTop - seatBottom) * dropTowerLiftAt(time);
     dropTower.draw(frameBuffer);
 
     RollerCoaster coaster;
-    coaster.controlPoints = {{830.0, 500.0}, {890.0, 390.0}, {955.0, 235.0}, {1025.0, 300.0}, {1075.0, 440.0},
-                             {1135.0, 470.0}, {1190.0, 345.0}, {1240.0, 265.0}, {1300.0, 330.0}};
-    coaster.groundY = horizonY;
-    coaster.trainDistance = coaster.trainFractionAtTime(time + 6.0);  // +6 s: train already on the lift at t = 0
+    coaster.controlPoints = coasterProfilePoints();
+    coaster.groundY = coasterProfileGroundY;
+    coaster.trainDistance = coasterTrainFractionAt(time);
     coaster.draw(frameBuffer);
 
     drawAstroworldSign(frameBuffer, {26.0, 236.0}, 190.0, 42.0, horizonY);

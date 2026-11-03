@@ -48,3 +48,22 @@ std::vector<Vec2> sampleCatmullRomSpline(const std::vector<Vec2>& points, int sa
     samples.push_back(closed ? samples.front() : points.back());
     return samples;
 }
+
+std::vector<Vec3> sampleCatmullRomSpline3D(const std::vector<Vec3>& points, int samplesPerSegment, bool closed) {
+    // Evaluate the 2D spline twice - once on (x, y) and once on (z, 0) - since
+    // Catmull-Rom works on each coordinate independently.
+    std::vector<Vec2> xyPoints;
+    std::vector<Vec2> zPoints;
+    for (const Vec3& point : points) {
+        xyPoints.push_back({point.x, point.y});
+        zPoints.push_back({point.z, 0.0});
+    }
+    const std::vector<Vec2> xySamples = sampleCatmullRomSpline(xyPoints, samplesPerSegment, closed);
+    const std::vector<Vec2> zSamples = sampleCatmullRomSpline(zPoints, samplesPerSegment, closed);
+    std::vector<Vec3> samples;
+    samples.reserve(xySamples.size());
+    for (std::size_t index = 0; index < xySamples.size(); ++index) {
+        samples.push_back({xySamples[index].x, xySamples[index].y, zSamples[index].x});
+    }
+    return samples;
+}

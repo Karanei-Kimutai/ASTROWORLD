@@ -16,6 +16,7 @@
 #include <vector>
 
 #include "core/vec2.h"
+#include "math/vec3.h"
 
 /**
  * @brief Evaluate one Catmull-Rom segment between p1 (t = 0) and p2 (t = 1).
@@ -36,3 +37,9 @@ Vec2 evaluateCatmullRomTangent(const Vec2& p0, const Vec2& p1, const Vec2& p2, c
  *        duplicated so the curve starts and ends exactly on them.
  */
 std::vector<Vec2> sampleCatmullRomSpline(const std::vector<Vec2>& points, int samplesPerSegment, bool closed);
+
+/**
+ * @brief The same Catmull-Rom spline through 3D points (each axis is an
+ *        independent cubic), used for the 3D coaster track and the dreads in OpenGL.
+ */
+std::vector<Vec3> sampleCatmullRomSpline3D(const std::vector<Vec3>& points, int samplesPerSegment, bool closed);

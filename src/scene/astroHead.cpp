@@ -23,6 +23,7 @@
 #include "raster/circles.h"
 #include "raster/lines.h"
 #include "raster/strokes.h"
+#include "scene/astroHeadShape.h"
 #include "scene/brassShading.h"
 
 namespace {
@@ -30,17 +31,6 @@ namespace {
 /** @brief Radii (in head units) of the imaginary ellipsoid the face shader lights. */
 constexpr double faceShadingRadiusU = 0.47;
 constexpr double faceShadingRadiusV = 0.64;
-
-/**
- * @brief Dread centre lines for the RIGHT side of the head (u > 0); the left side mirrors them.
- *
- * Each dread roots on the crown, rises in a tall arch above the head, then
- * falls down the side. Roots are spaced across the crown so the arches never cross.
- */
-const Vec2 outerDread[] = {{0.26, -0.46}, {0.40, -0.59}, {0.52, -0.50}, {0.57, -0.28}, {0.58, 0.0}, {0.59, 0.22}, {0.63, 0.30}};
-const Vec2 middleDread[] = {{0.16, -0.51}, {0.26, -0.67}, {0.40, -0.63}, {0.46, -0.42}, {0.48, -0.15}, {0.48, 0.08}, {0.51, 0.16}};
-const Vec2 frontDreadRight[] = {{0.06, -0.54}, {0.11, -0.71}, {0.24, -0.69}, {0.30, -0.50}, {0.32, -0.25}, {0.31, 0.0}, {0.34, 0.08}};
-const Vec2 frontDreadLeft[] = {{0.06, -0.54}, {0.12, -0.71}, {0.25, -0.69}, {0.32, -0.50}, {0.34, -0.20}, {0.33, 0.12}, {0.37, 0.22}};
 
 }  // namespace
 
@@ -89,7 +79,7 @@ void AstroHead::drawDread(FrameBuffer& frameBuffer, const Vec2* unitPoints, int 
 
 void AstroHead::drawOuterDreads(FrameBuffer& frameBuffer) const {
     // Outermost dreads sit behind the head: their roots are hidden by the crown.
-    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, outerDread, 7, side, 1.0);
+    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, astroHeadShape::outerDread, astroHeadShape::dreadPointCount, side, astroHeadShape::outerDreadSway);
 }
 
 void AstroHead::drawEars(FrameBuffer& frameBuffer) const {
@@ -207,11 +197,15 @@ void AstroHead::drawMouthPortal(FrameBuffer& frameBuffer) const {
     blendSoftEllipse(frameBuffer, upperLip.x, upperLip.y, 0.11 * pixelsPerUnit(), 0.03 * pixelsPerUnit(), astroPalette::brassLight, 0.5);
 
     // The doorway: straight sides rising from the ground into a rounded arch (Bezier).
-    std::vector<Vec2> doorway = {toScreen(-0.135, 0.5), toScreen(-0.135, 0.40)};
-    const std::vector<Vec2> arch = sampleCubicBezier(toScreen(-0.135, 0.40), toScreen(-0.135, 0.30), toScreen(0.135, 0.30),
-                                                     toScreen(0.135, 0.40), 24);
+    using astroHeadShape::doorwayArchControlV;
+    using astroHeadShape::doorwayArchStartV;
+    using astroHeadShape::doorwayHalfWidth;
+    std::vector<Vec2> doorway = {toScreen(-doorwayHalfWidth, 0.5), toScreen(-doorwayHalfWidth, doorwayArchStartV)};
+    const std::vector<Vec2> arch =
+        sampleCubicBezier(toScreen(-doorwayHalfWidth, doorwayArchStartV), toScreen(-doorwayHalfWidth, doorwayArchControlV),
+                          toScreen(doorwayHalfWidth, doorwayArchControlV), toScreen(doorwayHalfWidth, doorwayArchStartV), 24);
     doorway.insert(doorway.end(), arch.begin(), arch.end());
-    doorway.push_back(toScreen(0.135, 0.5));
+    doorway.push_back(toScreen(doorwayHalfWidth, 0.5));
 
     // Fragment shader: blinding white-yellow at the bottom centre, through gold, to orange at the rim.
     const Vec2 lightSource = toScreen(0.0, 0.5);
@@ -223,9 +217,9 @@ void AstroHead::drawMouthPortal(FrameBuffer& frameBuffer) const {
     });
 
     // Inner lip rim around the arch.
-    std::vector<Vec2> rim = {toScreen(-0.135, 0.5)};
+    std::vector<Vec2> rim = {toScreen(-doorwayHalfWidth, 0.5)};
     rim.insert(rim.end(), arch.begin(), arch.end());
-    rim.push_back(toScreen(0.135, 0.5));
+    rim.push_back(toScreen(doorwayHalfWidth, 0.5));
     drawThickPolyline(frameBuffer, rim, 0.01 * pixelsPerUnit(), astroPalette::brassDark);
 
     // Light spilling out: a haze over the lips and a pool of light on the ground.
@@ -238,7 +232,7 @@ void AstroHead::drawMouthPortal(FrameBuffer& frameBuffer) const {
 
 void AstroHead::drawFrontDreads(FrameBuffer& frameBuffer) const {
     // Middle dreads hang beside the cheeks; the front pair falls past the temples.
-    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, middleDread, 7, side, 0.8);
-    drawDread(frameBuffer, frontDreadRight, 7, 1.0, 0.6);
-    drawDread(frameBuffer, frontDreadLeft, 7, -1.0, 0.6);
+    for (double side : {-1.0, 1.0}) drawDread(frameBuffer, astroHeadShape::middleDread, astroHeadShape::dreadPointCount, side, astroHeadShape::middleDreadSway);
+    drawDread(frameBuffer, astroHeadShape::frontDreadRight, astroHeadShape::dreadPointCount, 1.0, astroHeadShape::frontDreadSway);
+    drawDread(frameBuffer, astroHeadShape::frontDreadLeft, astroHeadShape::dreadPointCount, -1.0, astroHeadShape::frontDreadSway);
 }

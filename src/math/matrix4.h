@@ -42,7 +42,35 @@ public:
      */
     static Matrix4 perspective(double fovYRadians, double aspectRatio, double nearPlane, double farPlane);
 
+    /**
+     * @brief The VIEW matrix of a camera at 'eye' looking at 'target'.
+     *
+     * Builds the camera's own axes - forward f = normalize(target - eye),
+     * right r = normalize(f x up), true up u = r x f - and returns the matrix
+     * that moves the world so the camera sits at the origin looking down -z.
+     */
+    static Matrix4 lookAt(const Vec3& eye, const Vec3& target, const Vec3& up);
+
+    /**
+     * @brief A rotation whose columns are the given axes (plus a translation).
+     *        Maps local x/y/z onto xAxis/yAxis/zAxis - used to orient an object
+     *        along a direction, e.g. a coaster car along the track tangent.
+     */
+    static Matrix4 fromBasis(const Vec3& xAxis, const Vec3& yAxis, const Vec3& zAxis, const Vec3& origin);
+
     Matrix4 operator*(const Matrix4& other) const;
+
+    /** @brief General inverse by Gauss-Jordan elimination (identity if the matrix is singular). */
+    Matrix4 inverse() const;
+
+    /** @brief Rows and columns swapped. inverse().transposed() transforms NORMALS correctly. */
+    Matrix4 transposed() const;
+
+    /**
+     * @brief Copy into 16 floats in COLUMN-MAJOR order, the layout OpenGL expects
+     *        (our elements are stored row-major, so this is also a transpose).
+     */
+    void toColumnMajor(float output[16]) const;
 
     /** @brief Transform a point (w = 1) and divide by the resulting w. */
     Vec3 transformPoint(const Vec3& point) const;
