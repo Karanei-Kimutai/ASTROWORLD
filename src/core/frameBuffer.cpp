@@ -89,9 +89,12 @@ FrameBuffer FrameBuffer::reducedTo8Bit(bool useDithering) const {
 bool FrameBuffer::savePpm(const std::string& filePath) const {
     std::ofstream file(filePath, std::ios::binary);
     if (!file) return false;
+    return writePpm(file);
+}
+
+bool FrameBuffer::writePpm(std::ostream& stream) const {
     // Header: magic number, dimensions, maximum channel value. Then raw RGB triples.
-    file << "P6\n" << width << " " << height << "\n255\n";
-    file.write(reinterpret_cast<const char*>(pixels.data()),
-               static_cast<std::streamsize>(pixels.size() * sizeof(Color)));
-    return static_cast<bool>(file);
+    stream << "P6\n" << width << " " << height << "\n255\n";
+    stream.write(reinterpret_cast<const char*>(pixels.data()), static_cast<std::streamsize>(pixels.size() * sizeof(Color)));
+    return static_cast<bool>(stream);
 }

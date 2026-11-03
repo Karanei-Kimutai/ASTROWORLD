@@ -9,8 +9,10 @@
 #include <string>
 #include <vector>
 
+#include "animation/easing.h"
 #include "curves/bezier.h"
 #include "fill/scanLineFill.h"
+#include "math/matrix3.h"
 #include "raster/circles.h"
 #include "raster/lines.h"
 #include "raster/strokes.h"
@@ -153,11 +155,13 @@ void drawAstroworldSign(FrameBuffer& frameBuffer, const Vec2& topLeft, double wi
     }
 }
 
-void drawBunting(FrameBuffer& frameBuffer, const Vec2& start, const Vec2& end, double sag, int flagCount, int colorShift) {
+void drawBunting(FrameBuffer& frameBuffer, const Vec2& start, const Vec2& end, double sag, int flagCount, int colorShift,
+                 double timeSeconds) {
     const Color flagColors[5] = {Color{220, 40, 50}, Color{250, 210, 40}, Color{40, 110, 210}, Color{245, 245, 245}, Color{240, 130, 40}};
     // The string: a cubic Bezier whose inner control points are pulled down by 'sag'.
-    const Vec2 controlOne = lerpVec2(start, end, 0.33) + Vec2(0.0, sag);
-    const Vec2 controlTwo = lerpVec2(start, end, 0.66) + Vec2(0.0, sag);
+    const double swayingSag = sag * (1.0 + oscillate(timeSeconds, 0.3, 0.08, colorShift));
+    const Vec2 controlOne = lerpVec2(start, end, 0.33) + Vec2(0.0, swayingSag);
+    const Vec2 controlTwo = lerpVec2(start, end, 0.66) + Vec2(0.0, swayingSag);
     drawPolylineBresenham(frameBuffer, sampleCubicBezier(start, controlOne, controlTwo, end, 40), Color{60, 60, 60});
 
     // Each pennant hangs from two points on the curve and points straight down.
@@ -168,6 +172,8 @@ void drawBunting(FrameBuffer& frameBuffer, const Vec2& start, const Vec2& end, d
         const Vec2 right = evaluateCubicBezier(start, controlOne, controlTwo, end, t1);
         const double flagLength = (right - left).length() * 1.3;
         const Vec2 tip = lerpVec2(left, right, 0.5) + Vec2(0.0, flagLength);
-        fillPolygon(frameBuffer, {left, right, tip}, flagColors[(flag + colorShift) % 5]);
+        // Flutter: rotate the pennant about the middle of its top edge.
+        const Matrix3 flutter = Matrix3::rotationAbout(lerpVec2(left, right, 0.5), oscillate(timeSeconds, 0.9, 0.18, flag * 0.8));
+        fillPolygon(frameBuffer, flutter.transformPoints({left, right, tip}), flagColors[(flag + colorShift) % 5]);
     }
 }

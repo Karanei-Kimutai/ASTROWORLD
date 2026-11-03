@@ -12,6 +12,7 @@
 #pragma once
 
 #include <functional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,9 @@ public:
      * @return false if the file could not be opened.
      */
     bool savePpm(const std::string& filePath) const;
+
+    /** @brief Write the PPM (P6) bytes to any stream - e.g. stdout, piped straight into ffmpeg. */
+    bool writePpm(std::ostream& stream) const;
 
     /**
      * @brief Raw read-only access to the pixel array (row-major, 3 bytes per pixel).

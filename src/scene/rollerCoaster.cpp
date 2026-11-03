@@ -7,8 +7,10 @@
 #include <algorithm>
 #include <cmath>
 
+#include "animation/easing.h"
 #include "curves/spline.h"
 #include "fill/scanLineFill.h"
+#include "math/matrix3.h"
 #include "raster/circles.h"
 #include "raster/lines.h"
 #include "raster/strokes.h"
@@ -92,25 +94,70 @@ void RollerCoaster::draw(FrameBuffer& frameBuffer) const {
     }
     const double carSpacing = 24.0;
     for (int car = 0; car < carCount; ++car) {
+        // Cars trailing behind the start of the track have not entered the ride yet.
+        const double carDistance = trainDistance * cumulativeLength.back() - car * carSpacing;
+        if (carDistance < 0.0) continue;
         Vec2 trackPoint;
         Vec2 tangent;
-        findTrackFrame(track, cumulativeLength, trainDistance * cumulativeLength.back() - car * carSpacing, trackPoint,
-                       tangent);
-        const Vec2 up = tangent.perpendicular() * -1.0;
-        const Vec2 carCenter = trackPoint + up * 8.0;
+        findTrackFrame(track, cumulativeLength, carDistance, trackPoint, tangent);
 
-        // Corners = centre +- half-length along the tangent +- half-height along "up".
-        const std::vector<Vec2> body = {carCenter - tangent * 10.0 - up * 6.0, carCenter + tangent * 10.0 - up * 6.0,
-                                        carCenter + tangent * 10.0 + up * 6.0, carCenter - tangent * 10.0 + up * 6.0};
+        // Car model matrix: rotate the car (built level, in local coordinates) to the
+        // track's slope, then translate it onto the track: model = T(trackPoint) * R(slope).
+        const double slope = std::atan2(tangent.y, tangent.x);
+        const Matrix3 carModel = Matrix3::translation(trackPoint) * Matrix3::rotation(slope);
+
+        // Local car: x along the track, -y is "up" off the rail.
+        static const std::vector<Vec2> localBody = {{-10.0, -14.0}, {10.0, -14.0}, {10.0, -2.0}, {-10.0, -2.0}};
+        const std::vector<Vec2> body = carModel.transformPoints(localBody);
         fillPolygon(frameBuffer, body, hsvToRgb(190.0 + car * 40.0, 0.8, 1.0));
         drawPolylineBresenham(frameBuffer, body, astroPalette::ink, true);
 
-        // Riders' heads poking up, and two wheels on the rail.
-        const Vec2 riderHead = carCenter + up * 9.0;
+        // Rider's head poking up, and two wheels on the rail.
+        const Vec2 riderHead = carModel.transformPoint({0.0, -17.0});
         fillCircle(frameBuffer, roundToInt(riderHead.x), roundToInt(riderHead.y), 3, astroPalette::crowd);
         for (double wheelOffset : {-6.0, 6.0}) {
-            const Vec2 wheel = carCenter - up * 6.0 + tangent * wheelOffset;
+            const Vec2 wheel = carModel.transformPoint({wheelOffset, -2.0});
             fillCircle(frameBuffer, roundToInt(wheel.x), roundToInt(wheel.y), 2, astroPalette::ink);
         }
     }
+}
+
+double RollerCoaster::trainFractionAtTime(double timeSeconds) const {
+    const std::vector<Vec2> track = sampleCatmullRomSpline(controlPoints, 20, false);
+    const std::size_t sampleCount = track.size();
+    if (sampleCount < 2) return 0.0;
+
+    // The chain lift runs from the start up to the first summit (highest point
+    // before the track first turns downward).
+    std::size_t summitIndex = 0;
+    while (summitIndex + 1 < sampleCount && track[summitIndex + 1].y <= track[summitIndex].y) ++summitIndex;
+    const double summitHeight = groundY - track[summitIndex].y;
+
+    // Time to travel each segment: dt = ds / v. After the summit the speed comes from
+    // ENERGY CONSERVATION: 1/2 v^2 + g h = constant  =>  v = sqrt(v0^2 + 2 g (hSummit - h)).
+    const double liftSpeed = 70.0;       // px/s, chain lift
+    const double summitSpeed = 45.0;     // px/s as the train tips over the top
+    const double gravity = 320.0;        // px/s^2
+    std::vector<double> cumulativeTime(sampleCount, 0.0);
+    std::vector<double> cumulativeLength(sampleCount, 0.0);
+    for (std::size_t index = 1; index < sampleCount; ++index) {
+        const double segmentLength = (track[index] - track[index - 1]).length();
+        double speed = liftSpeed;
+        if (index > summitIndex) {
+            const double height = groundY - (track[index].y + track[index - 1].y) * 0.5;
+            speed = std::sqrt(std::max(summitSpeed * summitSpeed + 2.0 * gravity * (summitHeight - height), 1.0));
+        }
+        cumulativeTime[index] = cumulativeTime[index - 1] + segmentLength / speed;
+        cumulativeLength[index] = cumulativeLength[index - 1] + segmentLength;
+    }
+
+    // Loop: after the end of the track the train re-enters at the start. Look up the
+    // distance travelled at this time by interpolating the time -> distance table.
+    const double loopTime = wrapTime(timeSeconds, cumulativeTime.back());
+    const auto upper = std::upper_bound(cumulativeTime.begin(), cumulativeTime.end(), loopTime);
+    const std::size_t index = std::clamp<std::size_t>(static_cast<std::size_t>(upper - cumulativeTime.begin()), 1, sampleCount - 1);
+    const double segmentTime = cumulativeTime[index] - cumulativeTime[index - 1];
+    const double t = segmentTime > 1e-9 ? (loopTime - cumulativeTime[index - 1]) / segmentTime : 0.0;
+    const double distance = cumulativeLength[index - 1] + t * (cumulativeLength[index] - cumulativeLength[index - 1]);
+    return distance / cumulativeLength.back();
 }

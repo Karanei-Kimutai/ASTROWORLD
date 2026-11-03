@@ -19,8 +19,12 @@ void drawAstroworldSign(FrameBuffer& frameBuffer, const Vec2& topLeft, double wi
 
 /**
  * @brief A string of triangular pennants hanging along a sagging cubic Bezier.
+ *
+ * Animation: the string's sag breathes slightly, and each pennant flutters by
+ * rotating about the midpoint of its top edge (Matrix3::rotationAbout).
+ *
  * @param sag        How far the middle of the string droops below the straight line.
  * @param colorShift Rotates the colour sequence so neighbouring strings differ.
  */
 void drawBunting(FrameBuffer& frameBuffer, const Vec2& start, const Vec2& end, double sag, int flagCount,
-                 int colorShift);
+                 int colorShift, double timeSeconds);

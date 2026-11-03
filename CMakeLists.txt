@@ -23,6 +23,9 @@ add_library(astroworldCore STATIC
     src/core/color.cpp
     src/core/frameBuffer.cpp
     src/core/coverageMask.cpp
+    # math: 2D (3x3) and 3D (4x4) homogeneous transformation matrices
+    src/math/matrix3.cpp
+    src/math/matrix4.cpp
     # raster: lines, circles/ellipses, clipping, thick strokes
     src/raster/lines.cpp
     src/raster/circles.cpp
@@ -50,6 +53,7 @@ add_library(astroworldCore STATIC
     # showcases
     src/showcase/algorithmShowcase.cpp
     src/showcase/colorShowcase.cpp
+    src/showcase/transformShowcase.cpp
 )
 target_include_directories(astroworldCore PUBLIC src)
 

@@ -17,37 +17,10 @@
 #include "raster/circles.h"
 #include "raster/clipping.h"
 #include "raster/lines.h"
+#include "showcase/showcasePanel.h"
 #include "text/bitmapFont.h"
 
 namespace {
-
-constexpr int panelWidth = 320;
-constexpr int panelHeight = 360;
-const Color panelBackground{18, 10, 36};
-const Color frameColor{90, 60, 140};
-const Color labelColor = astroPalette::goldLight;
-
-/** @brief Pixel rectangle of one panel plus helpers for its centre. */
-struct Panel {
-    int left;
-    int top;
-    double centerX() const { return left + panelWidth * 0.5; }
-    double centerY() const { return top + panelHeight * 0.5 + 16.0; }  // leave room for the title
-};
-
-Panel panelAt(int column, int row) { return {column * panelWidth, row * panelHeight}; }
-
-/** @brief Draw the panel border with Bresenham lines and its title in the bitmap font. */
-void drawPanelFrame(FrameBuffer& frameBuffer, const Panel& panel, const std::string& title, Color borderColor) {
-    const int right = panel.left + panelWidth - 1;
-    const int bottom = panel.top + panelHeight - 1;
-    drawLineBresenham(frameBuffer, panel.left, panel.top, right, panel.top, borderColor);
-    drawLineBresenham(frameBuffer, right, panel.top, right, bottom, borderColor);
-    drawLineBresenham(frameBuffer, right, bottom, panel.left, bottom, borderColor);
-    drawLineBresenham(frameBuffer, panel.left, bottom, panel.left, panel.top, borderColor);
-    drawBitmapText(frameBuffer, title, panel.left + (panelWidth - measureBitmapText(title, 2)) / 2, panel.top + 12, 2,
-                   labelColor);
-}
 
 /** @brief Panels 1 and 2: a starburst of lines in every octant, coloured around the hue wheel. */
 void drawStarburst(FrameBuffer& frameBuffer, const Panel& panel, bool useBresenham) {
@@ -156,7 +129,7 @@ void drawBoundaryFillPanel(FrameBuffer& frameBuffer, const Panel& panel) {
             boundaryFill8(frameBuffer, centerX, centerY, astroPalette::neonOrange, boundary);  // leaks diagonally
         }
     }
-    drawBitmapText(frameBuffer, "4-CONN", panel.left + 44, panel.top + panelHeight - 30, 2, labelColor);
+    drawBitmapText(frameBuffer, "4-CONN", panel.left + 44, panel.top + panelHeight - 30, 2, panelLabelColor);
     drawBitmapText(frameBuffer, "8-CONN", panel.left + panelWidth / 2 + 44, panel.top + panelHeight - 30, 2, astroPalette::ink);
 }
 
@@ -189,20 +162,20 @@ void renderAlgorithmShowcase(FrameBuffer& frameBuffer) {
     drawPanelFrame(frameBuffer, boundaryPanel, "", astroPalette::white);
     drawBoundaryFillPanel(frameBuffer, boundaryPanel);
     drawBitmapText(frameBuffer, "BOUNDARY FILL", boundaryPanel.left + (panelWidth - measureBitmapText("BOUNDARY FILL", 2)) / 2,
-                   boundaryPanel.top + 12, 2, labelColor);
+                   boundaryPanel.top + 12, 2, panelLabelColor);
 
-    drawPanelFrame(frameBuffer, panelAt(0, 0), "DDA LINE", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(0, 0), "DDA LINE", panelFrameColor);
     drawStarburst(frameBuffer, panelAt(0, 0), false);
-    drawPanelFrame(frameBuffer, panelAt(1, 0), "BRESENHAM LINE", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(1, 0), "BRESENHAM LINE", panelFrameColor);
     drawStarburst(frameBuffer, panelAt(1, 0), true);
-    drawPanelFrame(frameBuffer, panelAt(2, 0), "MIDPOINT CIRCLE+ELLIPSE", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(2, 0), "MIDPOINT CIRCLE+ELLIPSE", panelFrameColor);
     drawCirclePanel(frameBuffer, panelAt(2, 0));
-    drawPanelFrame(frameBuffer, panelAt(3, 0), "BEZIER (DE CASTELJAU)", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(3, 0), "BEZIER (DE CASTELJAU)", panelFrameColor);
     drawBezierPanel(frameBuffer, panelAt(3, 0));
-    drawPanelFrame(frameBuffer, panelAt(0, 1), "CATMULL-ROM SPLINE", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(0, 1), "CATMULL-ROM SPLINE", panelFrameColor);
     drawSplinePanel(frameBuffer, panelAt(0, 1));
-    drawPanelFrame(frameBuffer, panelAt(1, 1), "SCAN-LINE FILL", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(1, 1), "SCAN-LINE FILL", panelFrameColor);
     drawScanLinePanel(frameBuffer, panelAt(1, 1));
-    drawPanelFrame(frameBuffer, panelAt(3, 1), "COHEN-SUTHERLAND", frameColor);
+    drawPanelFrame(frameBuffer, panelAt(3, 1), "COHEN-SUTHERLAND", panelFrameColor);
     drawClippingPanel(frameBuffer, panelAt(3, 1));
 }

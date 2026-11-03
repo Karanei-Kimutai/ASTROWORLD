@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <vector>
 
+#include "animation/easing.h"
 #include "core/simpleRandom.h"
 #include "fill/scanLineFill.h"
 #include "raster/circles.h"
@@ -23,24 +24,37 @@ void drawSky(FrameBuffer& frameBuffer, int horizonY, double nightAmount) {
     const Color horizonColor = lerpColor(astroPalette::daySkyHorizon, astroPalette::nightSkyHorizon, nightAmount);
 
     // ...then interpolate down the screen in HSV space (keeps the blues saturated).
-    const PixelShader skyShader = [=](int, int y) {
-        const double t = std::clamp(static_cast<double>(y) / horizonY, 0.0, 1.0);
-        if (t < 0.5) return lerpColorHsv(topColor, midColor, t / 0.5);
-        return lerpColorHsv(midColor, horizonColor, (t - 0.5) / 0.5);
+    // The colour depends only on y, so it is computed ONCE PER ROW into a table and
+    // the shader just looks it up - much cheaper than an HSV conversion per pixel.
+    std::vector<Color> rowColors(static_cast<std::size_t>(std::max(horizonY, 1)));
+    for (int y = 0; y < horizonY; ++y) {
+        const double t = static_cast<double>(y) / horizonY;
+        rowColors[static_cast<std::size_t>(y)] = t < 0.5 ? lerpColorHsv(topColor, midColor, t / 0.5)
+                                                         : lerpColorHsv(midColor, horizonColor, (t - 0.5) / 0.5);
+    }
+    const PixelShader skyShader = [&rowColors, horizonY](int, int y) {
+        return rowColors[static_cast<std::size_t>(std::clamp(y, 0, horizonY - 1))];
     };
     const double width = frameBuffer.getWidth();
     fillPolygon(frameBuffer, {{0.0, 0.0}, {width, 0.0}, {width, double(horizonY)}, {0.0, double(horizonY)}}, skyShader);
 }
 
-void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity) {
+void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity, double timeSeconds) {
     if (opacity <= 0.0) return;
     SimpleRandom random(seed);
     const int cloudCount = 7;
     for (int cloud = 0; cloud < cloudCount; ++cloud) {
         // Spread clouds evenly across the width with some jitter.
         const double cloudWidth = random.nextRange(170.0, 340.0);
-        const double centerX = (cloud + 0.5) * frameBuffer.getWidth() / cloudCount + random.nextRange(-60.0, 60.0);
+        const double startX = (cloud + 0.5) * frameBuffer.getWidth() / cloudCount + random.nextRange(-60.0, 60.0);
         const double baseY = random.nextRange(horizonY * 0.18, horizonY * 0.8);
+
+        // Drift: translate right over time. Lower clouds look nearer, so they move
+        // faster (parallax). Wrap across a band wider than the screen so clouds
+        // slide fully off one edge before reappearing at the other.
+        const double speed = 6.0 + 14.0 * (baseY / horizonY);  // px/s
+        const double wrapWidth = frameBuffer.getWidth() + 2.0 * 220.0;
+        const double centerX = wrapTime(startX + 220.0 + speed * timeSeconds, wrapWidth) - 220.0;
 
         // Puffs: taller toward the middle of the cloud, flat along the base.
         struct Puff {
@@ -68,7 +82,7 @@ void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, doub
     }
 }
 
-void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity) {
+void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity, double timeSeconds) {
     if (opacity <= 0.0) return;
     SimpleRandom random(seed);
     const int starCount = 420;
@@ -77,8 +91,10 @@ void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, doubl
     for (int star = 0; star < starCount; ++star) {
         const int x = random.nextInt(0, frameBuffer.getWidth() - 1);
         const int y = random.nextInt(0, horizonY - 1);
-        const double brightness = random.nextRange(0.25, 1.0) * opacity;
         const Color tint = starTints[random.nextInt(0, 2)];
+        // Twinkle: brightness oscillates between 55% and 100% at a per-star rate and phase.
+        const double twinkle = 0.775 + oscillate(timeSeconds, random.nextRange(0.3, 1.5), 0.225, random.nextRange(0.0, 2.0 * pi));
+        const double brightness = random.nextRange(0.25, 1.0) * opacity * twinkle;
 
         if (random.nextDouble() < 0.06) {
             // Bright star: a soft core plus a 4-point flare. The plot callback
@@ -87,7 +103,7 @@ void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, doubl
             const PlotCallback flarePlotter = [&](int px, int py) {
                 const double distance = std::abs(px - x) + std::abs(py - y);
                 const double fade = std::max(0.0, 1.0 - distance / armLength);
-                frameBuffer.blendPixel(px, py, tint, opacity * fade * fade);
+                frameBuffer.blendPixel(px, py, tint, opacity * twinkle * fade * fade);
             };
             rasterizeLineBresenham(x - armLength, y, x + armLength, y, flarePlotter);
             rasterizeLineBresenham(x, y - armLength, x, y + armLength, flarePlotter);
@@ -183,8 +199,15 @@ void drawGround(FrameBuffer& frameBuffer, int horizonY, double nightAmount, std:
     const double height = frameBuffer.getHeight();
     const Color farColor = lerpColor(astroPalette::dayGroundFar, astroPalette::nightGroundFar, nightAmount);
     const Color nearColor = lerpColor(astroPalette::dayGroundNear, astroPalette::nightGroundNear, nightAmount);
+    // Colour depends only on the row, so build a per-row table (as for the sky).
+    std::vector<Color> rowColors(static_cast<std::size_t>(height));
+    for (int y = horizonY; y < static_cast<int>(height); ++y) {
+        rowColors[static_cast<std::size_t>(y)] = lerpColor(farColor, nearColor, (y - horizonY) / (height - horizonY));
+    }
     fillPolygon(frameBuffer, {{0.0, double(horizonY)}, {width, double(horizonY)}, {width, height}, {0.0, height}},
-                [=](int, int y) { return lerpColor(farColor, nearColor, std::clamp((y - horizonY) / (height - horizonY), 0.0, 1.0)); });
+                [&rowColors, horizonY, height](int, int y) {
+                    return rowColors[static_cast<std::size_t>(std::clamp(y, horizonY, static_cast<int>(height) - 1))];
+                });
 
     // Concrete expansion joints converging toward a vanishing point at the head (one-point perspective).
     const Vec2 vanishingPoint{width * 0.5, double(horizonY) - 60.0};

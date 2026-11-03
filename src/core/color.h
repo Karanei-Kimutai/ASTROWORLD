@@ -58,8 +58,22 @@ CmykColor rgbToCmyk(Color color);
 /** @brief CMYK -> RGB. */
 Color cmykToRgb(const CmykColor& cmyk);
 
+/**
+ * @brief Round a real channel value and clamp it into a byte [0, 255].
+ *
+ * Inline and branch-light because it runs millions of times per frame
+ * (every blended pixel goes through it).
+ */
+inline std::uint8_t clampChannel(double value) {
+    value = value < 0.0 ? 0.0 : (value > 255.0 ? 255.0 : value);
+    return static_cast<std::uint8_t>(value + 0.5);
+}
+
 /** @brief Straight per-channel RGB interpolation a + (b - a) * t. */
-Color lerpColor(Color a, Color b, double t);
+inline Color lerpColor(Color a, Color b, double t) {
+    return Color{clampChannel(a.r + (b.r - a.r) * t), clampChannel(a.g + (b.g - a.g) * t),
+                 clampChannel(a.b + (b.b - a.b) * t)};
+}
 
 /**
  * @brief Interpolate in HSV space, travelling the SHORT way round the hue circle.

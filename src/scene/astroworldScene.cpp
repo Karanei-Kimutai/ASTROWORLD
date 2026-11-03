@@ -1,17 +1,31 @@
 /**
  * @file astroworldScene.cpp
- * @brief Scene layout: where every ride and prop sits in the 1280x720 frame.
+ * @brief Scene layout and animation: where every ride sits, and how it moves over time.
  *
  * The composition follows the album cover: the head in the centre with its
  * mouth open on the ground, carnival rides and tents behind a black fence,
  * a rocket statue to the left, bunting strung out from the head, and the
  * "Greetings from ASTROWORLD" postcard logo across the top.
+ *
+ * Animation summary (t = seconds):
+ *   Ferris wheel     rotation = 0.25 rad/s * t, gondolas swing +-0.08 rad
+ *   Carousel         rotation = 0.7 rad/s * t about its vertical axis (4x4), horses bob
+ *   Roller coaster   chain lift then energy-conserving speed along the spline
+ *   Drop tower       keyframes: slow climb (ease in-out), pause, free-fall drop (bounce)
+ *   Head             breathing scale about its base, dreads bend in the wind, glow pulses
+ *   Crowd            walk cycles toward the mouth, shrink into the light
+ *   Clouds / stars   drift with parallax / twinkle
+ *   Bunting          pennants flutter
+ *   Searchlights     sweep back and forth (night)
+ *   Sky              day -> dusk -> night -> dawn over a 30 s loop (keyframes)
  */
 #include "scene/astroworldScene.h"
 
 #include <algorithm>
 #include <string>
 
+#include "animation/easing.h"
+#include "animation/keyframeTrack.h"
 #include "scene/astroHead.h"
 #include "scene/backdrop.h"
 #include "scene/carnivalProps.h"
@@ -32,19 +46,50 @@ void drawCaption(FrameBuffer& frameBuffer, const std::string& text, int centerX,
     drawBitmapText(frameBuffer, text, left, top, pixelScale, astroPalette::white);
 }
 
+/** @brief Day -> dusk -> night -> dawn over one loop. */
+const KeyframeTrack& nightTrack() {
+    static const KeyframeTrack track = KeyframeTrack()
+                                           .addKey(0.0, 0.0)
+                                           .addKey(8.0, 0.0)                          // day
+                                           .addKey(13.0, 1.0, easing::smoothStep)     // dusk
+                                           .addKey(25.0, 1.0)                         // night
+                                           .addKey(animationLoopSeconds, 0.0, easing::smoothStep);  // dawn
+    return track;
+}
+
+/**
+ * @brief Drop tower seat height over one 9-second ride cycle (0 = bottom, 1 = top).
+ *        Slow eased climb, a pause at the top, then a drop that accelerates like
+ *        free fall and bounces on the brakes (easeOutBounce).
+ */
+const KeyframeTrack& dropTowerTrack() {
+    static const KeyframeTrack track = KeyframeTrack()
+                                           .addKey(0.0, 0.0)
+                                           .addKey(3.5, 1.0, easing::easeInOutCubic)  // climb
+                                           .addKey(4.6, 1.0)                          // suspense at the top
+                                           .addKey(6.0, 0.0, easing::easeOutBounce)   // DROP
+                                           .addKey(9.0, 0.0);                         // unload / reload
+    return track;
+}
+
 }  // namespace
+
+SceneSettings sampleAnimation(double timeSeconds) {
+    return SceneSettings{nightTrack().sample(wrapTime(timeSeconds, animationLoopSeconds)), timeSeconds};
+}
 
 void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settings) {
     const int width = frameBuffer.getWidth();
     const double night = std::clamp(settings.nightAmount, 0.0, 1.0);
+    const double time = settings.timeSeconds;
     const int horizonY = 500;  // base of the fence / far edge of the plaza
 
     // ---- Sky ------------------------------------------------------------------------
     drawSky(frameBuffer, horizonY, night);
-    drawStars(frameBuffer, horizonY, 7u, night);
-    drawClouds(frameBuffer, horizonY, 31u, 1.0 - night);
-    drawSearchlight(frameBuffer, {420.0, horizonY + 10.0}, 74.0, 6.0, astroPalette::neonCyan, night);
-    drawSearchlight(frameBuffer, {880.0, horizonY + 10.0}, 108.0, 6.0, astroPalette::neonPink, night);
+    drawStars(frameBuffer, horizonY, 7u, night, time);
+    drawClouds(frameBuffer, horizonY, 31u, 1.0 - night, time);
+    drawSearchlight(frameBuffer, {420.0, horizonY + 10.0}, 74.0 + oscillate(time, 0.07, 22.0), 6.0, astroPalette::neonCyan, night);
+    drawSearchlight(frameBuffer, {880.0, horizonY + 10.0}, 108.0 + oscillate(time, 0.09, 20.0, 1.3), 6.0, astroPalette::neonPink, night);
     drawSkyline(frameBuffer, horizonY, 21u, lerpColor(astroPalette::daySkyline, astroPalette::nightSkyline, night));
 
     // ---- Behind the fence: rides, sign and big top ----------------------------------
@@ -52,7 +97,8 @@ void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settin
     ferrisWheel.hubPosition = {300.0, 330.0};
     ferrisWheel.radius = 132;
     ferrisWheel.gondolaCount = 12;
-    ferrisWheel.rotationAngle = 0.12;
+    ferrisWheel.rotationAngle = 0.12 + 0.25 * time;
+    ferrisWheel.swingAngle = oscillate(time, 0.4, 0.08);
     ferrisWheel.groundY = horizonY;
     ferrisWheel.draw(frameBuffer);
 
@@ -60,14 +106,16 @@ void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settin
     dropTower.centerX = 1180.0;
     dropTower.topY = 130.0;
     dropTower.groundY = horizonY;
-    dropTower.seatY = 300.0;
+    const double seatBottom = horizonY - 40.0;
+    const double seatTop = dropTower.topY + 40.0;
+    dropTower.seatY = seatBottom + (seatTop - seatBottom) * dropTowerTrack().sample(wrapTime(time, dropTowerTrack().duration()));
     dropTower.draw(frameBuffer);
 
     RollerCoaster coaster;
     coaster.controlPoints = {{830.0, 500.0}, {890.0, 390.0}, {955.0, 235.0}, {1025.0, 300.0}, {1075.0, 440.0},
                              {1135.0, 470.0}, {1190.0, 345.0}, {1240.0, 265.0}, {1300.0, 330.0}};
     coaster.groundY = horizonY;
-    coaster.trainDistance = 0.3;
+    coaster.trainDistance = coaster.trainFractionAtTime(time + 6.0);  // +6 s: train already on the lift at t = 0
     coaster.draw(frameBuffer);
 
     drawAstroworldSign(frameBuffer, {26.0, 236.0}, 190.0, 42.0, horizonY);
@@ -82,12 +130,14 @@ void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settin
     head.scale = 372.0;
     head.center = {width * 0.5, 560.0 - 0.5 * head.scale};
     head.rimColor = lerpColor(Color{120, 170, 230}, astroPalette::neonPink, night);
-    head.glowStrength = 0.85 + 0.45 * night;
+    head.glowStrength = (0.85 + 0.45 * night) * (1.0 + oscillate(time, 0.8, 0.12));
+    head.breathingScale = 1.0 + oscillate(time, 0.25, 0.012);
+    head.dreadSwayAngle = oscillate(time, 0.3, 0.035) + oscillate(time, 0.71, 0.012);
 
-    drawBunting(frameBuffer, {head.center.x - 120.0, 300.0}, {40.0, 380.0}, 50.0, 14, 0);
-    drawBunting(frameBuffer, {head.center.x - 100.0, 340.0}, {230.0, 455.0}, 30.0, 10, 2);
-    drawBunting(frameBuffer, {head.center.x + 120.0, 300.0}, {1240.0, 380.0}, 50.0, 14, 1);
-    drawBunting(frameBuffer, {head.center.x + 100.0, 340.0}, {1050.0, 455.0}, 30.0, 10, 3);
+    drawBunting(frameBuffer, {head.center.x - 120.0, 300.0}, {40.0, 380.0}, 50.0, 14, 0, time);
+    drawBunting(frameBuffer, {head.center.x - 100.0, 340.0}, {230.0, 455.0}, 30.0, 10, 2, time);
+    drawBunting(frameBuffer, {head.center.x + 120.0, 300.0}, {1240.0, 380.0}, 50.0, 14, 1, time);
+    drawBunting(frameBuffer, {head.center.x + 100.0, 340.0}, {1050.0, 455.0}, 30.0, 10, 3, time);
     head.draw(frameBuffer);
 
     // ---- Foreground -------------------------------------------------------------------
@@ -96,11 +146,12 @@ void renderAstroworldScene(FrameBuffer& frameBuffer, const SceneSettings& settin
     Carousel carousel;
     carousel.baseCenter = {1075.0, 655.0};
     carousel.radius = 92.0;
-    carousel.rotationAngle = 0.2;
+    carousel.rotationAngle = 0.2 + 0.7 * time;
+    carousel.bobPhase = 2.0 * pi * 0.8 * time;
     carousel.draw(frameBuffer);
 
-    drawCrowd(frameBuffer, {head.center.x, head.groundY()}, 99u);
-    drawBalloonVendor(frameBuffer, {165.0, 712.0});
+    drawCrowd(frameBuffer, {head.center.x, head.groundY()}, time, 99u);
+    drawBalloonVendor(frameBuffer, {165.0, 712.0}, time);
 
     // ---- "Greetings from ASTROWORLD - Wish you were here" -----------------------------
     WordmarkStyle style;

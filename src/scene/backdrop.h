@@ -20,14 +20,19 @@ void drawSky(FrameBuffer& frameBuffer, int horizonY, double nightAmount);
 /**
  * @brief Fluffy cumulus clouds, each a cluster of soft-edged (alpha-falloff) ellipses:
  *        a bluish shadow layer below and a white lit layer above.
+ *
+ * Animation: every cloud is TRANSLATED along x at its own speed (nearer, lower
+ * clouds move faster - parallax) and wraps around when it leaves the screen.
  */
-void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity);
+void drawClouds(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity, double timeSeconds);
 
 /**
  * @brief Star field: faint single pixels plus bright stars with 4-point diffraction
  *        flares (horizontal + vertical Bresenham lines whose alpha fades with distance).
+ *
+ * Animation: each star's brightness oscillates at its own rate (twinkling).
  */
-void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity);
+void drawStars(FrameBuffer& frameBuffer, int horizonY, std::uint32_t seed, double opacity, double timeSeconds);
 
 /**
  * @brief A searchlight beam: a fan of DDA rays, each clipped to the screen with

@@ -14,16 +14,17 @@
 
 #include "curves/bezier.h"
 #include "fill/scanLineFill.h"
+#include "math/matrix4.h"
 #include "raster/circles.h"
 #include "raster/lines.h"
 #include "raster/strokes.h"
 
 namespace {
 
-/** @brief One horse on its pole; 'depth' in [-1, 1] (+1 = nearest the viewer). */
+/** @brief One horse after the model-view transform (view space: x right, y up, z toward the viewer). */
 struct HorseSlot {
-    double angle;
-    double depth;
+    Vec3 position;  // horse body (including its bob)
+    Vec3 poleBase;  // where its pole meets the platform
     int index;
 };
 
@@ -74,25 +75,41 @@ void Carousel::draw(FrameBuffer& frameBuffer) const {
                     return lerpColor(astroPalette::goldLight, astroPalette::goldDark, std::clamp((x - centerX + 9.0) / 18.0, 0.0, 1.0));
                 });
 
-    // ---- Horses on poles, sorted back-to-front (painter's algorithm) ----------
+    // ---- Horses on poles: placed in 3D with 4x4 matrices, then projected -----------
+    // Model: each horse starts at (0.8 R, bob, 0) and is spun about the vertical (y)
+    //        axis:            model_i = Ry(rotationAngle + i * 45 degrees)
+    // View:  the camera looks slightly DOWN on the ride, i.e. the world is tilted
+    //        about the x axis: view = Rx(viewTilt). sin(viewTilt) = squash, so the
+    //        horse ring lines up with the platform ellipse.
+    // Projection: orthographic (parallel) - simply drop z after the view transform,
+    //        keeping z as the depth for painter's sorting and size.
     const int horseCount = 8;
+    const double viewTilt = std::asin(squash);
+    const Matrix4 view = Matrix4::rotationX(viewTilt);
     std::vector<HorseSlot> slots;
     for (int index = 0; index < horseCount; ++index) {
-        const double angle = rotationAngle + index * 2.0 * pi / horseCount;
-        slots.push_back({angle, std::sin(angle), index});
+        const Matrix4 model = Matrix4::rotationY(rotationAngle + index * 2.0 * pi / horseCount);
+        const double bob = 6.0 * std::sin(bobPhase + index * 1.7);  // up-and-down gallop
+        const Vec3 viewPosition = (view * model).transformPoint({radius * 0.8, bob, 0.0});
+        const Vec3 poleBase = (view * model).transformPoint({radius * 0.8, 0.0, 0.0});
+        slots.push_back({viewPosition, poleBase, index});
     }
-    std::sort(slots.begin(), slots.end(), [](const HorseSlot& a, const HorseSlot& b) { return a.depth < b.depth; });
+    // Painter's algorithm: most distant (smallest z) first.
+    std::sort(slots.begin(), slots.end(), [](const HorseSlot& a, const HorseSlot& b) { return a.position.z < b.position.z; });
 
+    const double platformTopY = baseY - 6.0;
+    const double ringDepth = radius * 0.8;
     for (const HorseSlot& slot : slots) {
-        const double poleX = centerX + std::cos(slot.angle) * radius * 0.8;
-        const double poleBottom = baseY - 6.0 + slot.depth * radius * squash * 0.8;
-        const double size = 0.8 + 0.2 * slot.depth;  // nearer horses look bigger
+        // View space has y UP; screen y points DOWN, hence the minus signs.
+        const double poleX = centerX + slot.position.x;
+        const double poleBottom = platformTopY - slot.poleBase.y;
+        const double depth = std::clamp(slot.position.z / ringDepth, -1.0, 1.0);  // -1 back .. +1 front
+        const double size = 0.8 + 0.2 * depth;  // nearer horses look bigger
         drawThickLine(frameBuffer, {poleX, canopyY + 4.0}, {poleX, poleBottom}, 1.6, astroPalette::goldLight);
 
-        // Horses at the front move right, at the back move left (anticlockwise seen from above).
-        const int direction = slot.depth >= 0.0 ? 1 : -1;
-        const double bob = 6.0 * std::sin(slot.index * 1.7);  // staggered heights; animated in CP2
-        const Vec2 bodyCenter{poleX, (canopyY + poleBottom) * 0.5 + bob};
+        // Ry with a positive angle moves the front of the ring to the right.
+        const int direction = depth >= 0.0 ? 1 : -1;
+        const Vec2 bodyCenter{poleX, (canopyY + poleBottom) * 0.5 - slot.position.y + slot.poleBase.y};
         const Color coat = slot.index % 2 == 0 ? astroPalette::cream : Color{255, 150, 200};
         drawHorse(frameBuffer, bodyCenter, size, direction, coat);
     }

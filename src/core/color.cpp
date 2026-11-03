@@ -7,15 +7,6 @@
 #include <algorithm>
 #include <cmath>
 
-namespace {
-
-/** @brief Round a real channel value and clamp it into a byte [0, 255]. */
-std::uint8_t clampChannel(double value) {
-    return static_cast<std::uint8_t>(std::clamp(std::lround(value), 0L, 255L));
-}
-
-}  // namespace
-
 Color makeColor(int red, int green, int blue) {
     return Color{static_cast<std::uint8_t>(std::clamp(red, 0, 255)),
                  static_cast<std::uint8_t>(std::clamp(green, 0, 255)),
@@ -98,11 +89,6 @@ Color cmykToRgb(const CmykColor& cmyk) {
     return Color{clampChannel(255.0 * (1.0 - cmyk.cyan) * (1.0 - cmyk.key)),
                  clampChannel(255.0 * (1.0 - cmyk.magenta) * (1.0 - cmyk.key)),
                  clampChannel(255.0 * (1.0 - cmyk.yellow) * (1.0 - cmyk.key))};
-}
-
-Color lerpColor(Color a, Color b, double t) {
-    return Color{clampChannel(a.r + (b.r - a.r) * t), clampChannel(a.g + (b.g - a.g) * t),
-                 clampChannel(a.b + (b.b - a.b) * t)};
 }
 
 Color lerpColorHsv(Color a, Color b, double t) {
