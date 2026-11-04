@@ -119,3 +119,15 @@ add_executable(astroworldRay
     src/raytrace/rayTracer.cpp
 )
 target_link_libraries(astroworldRay PRIVATE astroworldCore Threads::Threads)
+
+# Side project (branch 'blender'): export the 3D park and its animation for Blender.
+add_executable(astroworldExport
+    src/exportMain.cpp
+    src/mesh/meshBuilder.cpp
+    src/park3d/headModel.cpp
+    src/park3d/parkModels.cpp
+    src/park3d/parkScene.cpp
+    src/park3d/parkRides.cpp
+    src/park3d/parkTextures.cpp
+)
+target_link_libraries(astroworldExport PRIVATE astroworldCore)

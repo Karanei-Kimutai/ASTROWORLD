@@ -88,6 +88,7 @@ struct ParkFrame {
     double timeSeconds = 0.0;
     std::vector<Instance> instances;
     MeshData dreads;          // re-meshed every frame (they bend in the wind)
+    double dreadSwayAngle = 0.0;  // the bend used for 'dreads' (exporters animate it as a shape key)
     MeshData balloonStrings;  // follow the swaying balloons
     SceneLighting lighting;
 };

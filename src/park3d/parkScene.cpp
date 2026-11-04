@@ -297,7 +297,8 @@ void ParkScene::addEntrance(ParkFrame& frame, double time, double night) const {
     add(MeshId::head, headModel, goldVinyl);
     add(MeshId::dreads, headModel, goldVinyl);
     add(MeshId::tunnel, headModel, makeMaterial(white, 0.0, 0.5, 1.0, 3.0 + 3.0 * night));
-    frame.dreads = buildDreadMesh(oscillate(time, 0.3, 0.03) + oscillate(time, 0.71, 0.01));
+    frame.dreadSwayAngle = oscillate(time, 0.3, 0.03) + oscillate(time, 0.71, 0.01);
+    frame.dreads = buildDreadMesh(frame.dreadSwayAngle);
 
     // ---- The palisade wall either side of the head, and the exit gate --------------------
     for (MeshId wall : {MeshId::entranceWallLeft, MeshId::entranceWallMiddle, MeshId::entranceWallRight}) add(wall, Matrix4::identity(), steel);
