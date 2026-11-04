@@ -2,6 +2,10 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
+The `photorealism` branch turns the 3D park into a photoreal, living theme park: the inflatable gold head is the entrance gate, crowds walk through its mouth into a park full of rides, and everything is lit with physically based shading, shadows and HDR. See [the photorealism section](#photorealism--a-living-photoreal-park).
+
+![The photoreal park at night](docs/screenshots/photoGateNight.png)
+
 The same park is drawn by **three renderers that we wrote**:
 - a 2D software rasterizer (CP1/CP2)
 - a real-time OpenGL 3D renderer (CP3, prototype)
@@ -44,6 +48,7 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
+| `photorealism` | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
 | `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
 
 ---
@@ -638,3 +643,78 @@ One-, two- and three-point perspective:
 - **A sculpted head mesh** (or a loaded model) with a real mouth opening, and textured skin detail.
 - **Physically based materials** (metallic/roughness) shared by both 3D renderers, and HDR with tone mapping in OpenGL too.
 - **Sound and presentation polish:** music on the timeline, a title sequence using the CP1 wordmark, and an on-screen ride counter.
+
+---
+
+## Photorealism – a living, photoreal park
+
+*Branch `photorealism`, built on `final`.* The goal: make the 3D park look like a real ASTROWORLD theme park. That means the inflatable from the album cover, more rides, a bigger world with life in it, and visitors who walk **into** the park through the mouth instead of disappearing.
+
+| Day (OpenGL, real time) | Night (OpenGL, real time) |
+|---|---|
+| ![Day](docs/screenshots/photoDay.png) | ![Night](docs/screenshots/photoNight.png) |
+| ![The gate](docs/screenshots/photoGate.png) | ![Inside the park](docs/screenshots/photoInside.png) |
+
+![Rides: swing ride, pirate ship, Ferris wheel at night, carousel](docs/screenshots/photoRides.png)
+
+| Aerial | Path traced (same scene, CPU) |
+|---|---|
+| ![Aerial](docs/screenshots/photoAerial.png) | ![Path traced](docs/screenshots/photoPathDay.png) |
+
+### What changed
+
+**Photorealistic rendering (OpenGL)**
+
+| Technique | Implementation |
+|---|---|
+| **Physically based shading** | Cook–Torrance microfacet BRDF: GGX normal distribution, Smith–Schlick geometry, Schlick Fresnel, with **metallic/roughness** materials. It replaces Blinn-Phong; the Phong model's ambient, diffuse and specular parts each become physically based ([shaders.h](src/glScene/shaders.h)). |
+| Image-based ambient | Hemisphere irradiance from sky and ground, plus a roughness-blurred **environment reflection**, so the gold head mirrors the blue sky and the plaza like the photo |
+| **Shadow mapping** | The scene is rendered from the sun into a 4096² depth texture (orthographic, because sunlight is parallel). Each pixel compares its depth with hardware PCF over a 3×3 kernel for soft edges, using polygon offset and a normal offset against acne ([framePipeline.cpp](src/gl/framePipeline.cpp)). |
+| **HDR and tone mapping** | Lighting is computed in **linear** light into a 16-bit float, 4× MSAA buffer, then **ACES filmic** tone mapping, **gamma correction** (sRGB), exposure and a vignette |
+| **Bloom** | A bright pass plus a separable Gaussian blur at half resolution make lamps, bulbs and the glowing mouth glow like they do through a real lens |
+| Many lights | Up to 16 point lights per frame (the mouth, warm uplights on the head, lamp posts, rides, stalls), chosen nearest the camera; negligible lights are skipped per pixel |
+| **GPU instancing** | About 1,400 instances are grouped by mesh and material, and each group is drawn in one call with per-instance model matrices and tints (`glVertexAttribDivisor`, `glDrawElementsInstanced`) |
+| Atmosphere | A procedural sky with sun disc, glow and clouds; a warm horizon band and stars at night; distance fog |
+
+**The inflatable head**
+- **One sculpted surface:** ~130,000 triangles. The nose, pouting upper lip, closed eyelids (with crease lines), cheeks and brow are smooth bumps and creases *pushed out of the surface along its normals*, so they flow into each other like inflated vinyl. Faint **seams** run down the sides and back, as on a real inflatable.
+- **A broad jaw:** below the cheekbones the cross-section eases from an ellipsoid into near-vertical sides, so the head stands on the ground instead of balancing on its tip.
+- **A walk-through mouth:** the arch is cut out of the mesh front and back. A **tunnel** with glowing walls joins the two openings, and inflated lips cover the cut edges.
+- **Dreads:** fat inflated tubes that arch over the crown, curl at the tips and sway in the wind.
+- **Material:** gold vinyl (metallic 0.85, roughness 0.3) that reflects the environment.
+
+**A bigger park with life in it**
+- **The head is the entrance gate,** set in a palisade wall. The album cover's plaza is in front: the rocket, the gold statue, the wrecked car, the bunting and the balloon vendor. A separate exit gate stands in the wall.
+- **New rides, each moved by physics or a transformation hierarchy:**
+  - **Wave swinger:** the chairs hang at the angle where chain tension balances gravity against the centripetal force, tan θ = ω²r/g. The radius r grows as they swing out, so θ is found by fixed-point iteration. The spin follows keyframes and the canopy rocks.
+  - **Pirate ship:** a pendulum with period T = 2π√(L/g), whose amplitude builds and dies away over each ride.
+  - **Teacups:** three nested rotations (platform → turntables → cups).
+  - **Bumper cars:** each car follows its own Lissajous curve and faces its direction of travel.
+- **Larger classics:** a 30 m Ferris wheel, a 22 m coaster, a 40 m drop tower, the carousel, the big top, and a chrome "Astro globe" at the park's hub.
+- **The world beyond:** food stalls, about 85 trees, lawns, lamp posts along the paths, and a meadow that runs to the horizon.
+- **Visitors:**
+  - ~140 walk a loop: in through the mouth, around the rides, out through the exit gate, and back round the plaza.
+  - Their legs swing with the **distance walked**, so feet don't slide. Children and adults have different heights, with varied clothes and skin tones.
+  - People queue at the stalls, and **riders** fill every ride.
+- **Lighting at night:** lamp posts, ride lights and warm uplights at the foot of the head turn on with the day/night timeline, as on the night album cover.
+
+**The ray tracer** uses the same PBR materials, lights, sky and ACES tone mapping, so it remains a reference for the real-time image.
+
+| Whitted, day | Whitted, night |
+|---|---|
+| ![Ray traced day](docs/screenshots/photoRayDay.png) | ![Ray traced night](docs/screenshots/photoRayNight.png) |
+
+### Controls added
+- `X` toggles sun shadows and `B` toggles bloom (`--no-shadows` and `--no-bloom` on the command line).
+- `C` now cycles 11 viewpoints, including **The gate** (visitors walking in), **Inside the park**, **Swing ride** and **Pirate ship**.
+
+### Performance and limitations
+- **Frame rate:** on this machine, an integrated AMD Radeon behind WSL's Direct3D 12 translation, the park runs at about **28 fps by day and 22 fps at night**.
+- **Where the time goes:** measured per frame,
+  - building the scene: ~3.5 ms
+  - GPU rendering: ~20 ms, about half of it the sky and post-processing
+  - presenting through WSLg: ~7.5 ms
+
+  Instancing cut draw calls from ~2,750 to ~300 per frame but didn't change fps much, which shows the integrated GPU's fragment work is now the limit. A discrete GPU would run it far faster.
+- **Ray tracing cost:** the ray tracer now sees ~690,000 triangles. A 1280×720 Whitted frame takes ~13 s by day; path tracing takes about a minute at 960×540 with 48 samples and is still grainy.
+- **Still stylised:** the visitors and trees are built from simple primitives. The head is sculpted procedurally rather than modelled, so its face is softer than the photographed inflatable.
