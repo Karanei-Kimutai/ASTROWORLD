@@ -13,6 +13,7 @@
  *   V   cycle projections: perspective, isometric, cavalier, cabinet, top, front
  *   G   cycle shading: flat, Gouraud, Phong                    F   wireframe
  *   T   textures on/off      M   mipmapping on/off             O   automatic orbit
+ *   X   sun shadows on/off   B   bloom on/off
  *   SPACE play/pause   LEFT/RIGHT seek   UP/DOWN speed   1/2 day/night
  *   L   logo   H   help   P   screenshot   ESC quit
  *
@@ -21,7 +22,7 @@
  *   astroworldGl --capture file.ppm [options]      one frame, off-screen
  *   astroworldGl --animate seconds fps (dir | -)   frame sequence, off-screen
  * Options: --time s  --camera n  --projection n  --shading n  --wireframe  --ride
- *          --no-logo  --no-textures  --no-mipmaps  --software  --duration s
+ *          --no-logo  --no-textures  --no-mipmaps  --no-shadows  --no-bloom  --software  --duration s
  */
 #define GLFW_INCLUDE_NONE  // we include our own OpenGL declarations (gl/glFunctions.h)
 #include <GLFW/glfw3.h>
@@ -40,6 +41,7 @@
 
 #include "animation/astroworldTimeline.h"
 #include "gl/glFunctions.h"
+#include "gl/framePipeline.h"
 #include "gl/glResources.h"
 #include "glScene/astroworldPark.h"
 #include "glScene/overlayImage.h"
@@ -89,6 +91,8 @@ void keyCallback(GLFWwindow* window, int key, int, int action, int) {
         case GLFW_KEY_F: state.options.wireframe = !state.options.wireframe; break;
         case GLFW_KEY_T: state.options.textures = !state.options.textures; break;
         case GLFW_KEY_M: state.options.mipmapping = !state.options.mipmapping; break;
+        case GLFW_KEY_B: state.options.bloom = !state.options.bloom; break;
+        case GLFW_KEY_X: state.options.shadows = !state.options.shadows; break;
         case GLFW_KEY_R: state.ridingCoaster = !state.ridingCoaster; break;
         case GLFW_KEY_O: state.autoOrbit = !state.autoOrbit; break;
         case GLFW_KEY_L: state.options.showLogo = !state.options.showLogo; break;
@@ -113,7 +117,7 @@ CameraMatrices cameraFor(const ViewerState& state, const ParkScene& scene) {
         CameraMatrices ride;
         ride.eye = eye;
         ride.view = Matrix4::lookAt(eye, eye + forward, up);  // the camera banks with the car
-        ride.projection = Matrix4::perspective(75.0 * pi / 180.0, aspect, 0.05, 400.0);
+        ride.projection = Matrix4::perspective(75.0 * pi / 180.0, aspect, 0.05, 700.0);
         return ride;
     }
     return state.camera.matrices(state.projection, aspect);
@@ -125,13 +129,15 @@ RgbaImage buildHelpImage(const ViewerState& state, double framesPerSecond, const
     std::snprintf(status, sizeof(status), "T %5.1fS  %s X%.2f  %2.0f FPS", state.animationTime, state.playing ? "PLAY" : "PAUSE",
                   state.playbackSpeed, framesPerSecond);
     const std::string view = state.ridingCoaster ? "COASTER RIDE" : OrbitCamera::presetName(state.cameraPreset);
-    const std::string modes = std::string(shadingModeName(state.options.shading)) + (state.options.wireframe ? " WIREFRAME" : "") +
-                              (state.options.textures ? "" : " NO-TEX") + (state.options.mipmapping ? "" : " NO-MIP");
+    const std::string modes = std::string(shadingModeName(state.options.shading)) + (state.options.wireframe ? " WIRE" : "") +
+                              (state.options.textures ? "" : " NO-TEX") + (state.options.mipmapping ? "" : " NO-MIP") +
+                              (state.options.shadows ? "" : " NO-SHADOW") + (state.options.bloom ? "" : " NO-BLOOM");
     const std::vector<std::string> lines = {
         "DRAG ORBIT  SCROLL ZOOM  WASDQE",
         "C VIEW  R RIDE  V PROJECTION",
         "G SHADING  F WIREFRAME",
         "T TEXTURES  M MIPMAPS  O ORBIT",
+        "X SHADOWS  B BLOOM",
         "SPACE PLAY  ARROWS SEEK/SPEED",
         "1 DAY 2 NIGHT  L LOGO  P SHOT",
         "",
@@ -147,7 +153,7 @@ RgbaImage buildHelpImage(const ViewerState& state, double framesPerSecond, const
     return renderOverlayImage(width, height, [&](FrameBuffer& canvas) {
         for (int y = 0; y < height; ++y) canvas.blendSpan(y, 0, width - 1, astroPalette::black, 0.6);
         for (std::size_t index = 0; index < lines.size(); ++index) {
-            const Color color = index >= 7 ? astroPalette::letterYellow : astroPalette::white;
+            const Color color = index >= 8 ? astroPalette::letterYellow : astroPalette::white;
             drawBitmapText(canvas, lines[index], 10, 8 + static_cast<int>(index) * lineHeight, 2, color);
         }
     });
@@ -172,24 +178,21 @@ int runWithContext(GLFWwindow* window, ViewerState& state, const std::string& ca
                    double animateSeconds, int animateFps) {
     std::string error;
     const ParkScene scene;
-    RenderTarget target;
     AstroworldPark park;
-    if (!target.create(AstroworldPark::renderWidth, AstroworldPark::renderHeight, 4, error) || !park.initialise(scene, error)) {
+    if (!park.initialise(scene, error)) {
         std::cerr << "Initialisation failed: " << error << "\n";
         return 1;
     }
 
     auto renderFrame = [&](double time) {
         state.animationTime = time;
-        target.bindForDrawing();
         park.render(scene.frameAt(time, nightAmountAt(time)), cameraFor(state, scene), state.options);
     };
 
     // ---- Off-screen modes: one screenshot, or a whole animation ---------------------------
     if (!capturePath.empty()) {
         renderFrame(state.animationTime);
-        target.resolve();
-        const bool saved = target.readBack().savePpm(capturePath);
+        const bool saved = park.pipeline().readBack().savePpm(capturePath);
         std::cerr << (saved ? "captured " : "FAILED to capture ") << capturePath << "\n";
         return saved ? 0 : 1;
     }
@@ -201,8 +204,7 @@ int runWithContext(GLFWwindow* window, ViewerState& state, const std::string& ca
         const int frameCount = static_cast<int>(animateSeconds * animateFps + 0.5);
         for (int index = 0; index < frameCount; ++index) {
             renderFrame(startTime + static_cast<double>(index) / animateFps);
-            target.resolve();
-            const FrameBuffer frame = target.readBack();
+            const FrameBuffer frame = park.pipeline().readBack();
             if (toStdout) {
                 frame.writePpm(std::cout);
             } else {
@@ -267,17 +269,16 @@ int runWithContext(GLFWwindow* window, ViewerState& state, const std::string& ca
             }
             park.drawOverlay(helpTexture, 12, AstroworldPark::renderHeight - helpTexture.getHeight() - 12);
         }
-        target.resolve();
         if (state.screenshotRequested) {
             std::filesystem::create_directories("output");
             char fileName[64];
             std::snprintf(fileName, sizeof(fileName), "output/gl_t%06.2f.ppm", state.animationTime);
-            std::cout << (target.readBack().savePpm(fileName) ? "saved " : "FAILED to save ") << fileName << "\n";
+            std::cout << (park.pipeline().readBack().savePpm(fileName) ? "saved " : "FAILED to save ") << fileName << "\n";
             state.screenshotRequested = false;
         }
         int windowWidth = 0, windowHeight = 0;
         glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
-        target.presentToWindow(windowWidth, windowHeight);
+        park.pipeline().presentToWindow(windowWidth, windowHeight);
         glfwSwapBuffers(window);
         ++framesDrawn;
     }
@@ -317,6 +318,8 @@ int main(int argumentCount, char** argumentValues) {
         else if (argument == "--no-logo") state.options.showLogo = false;
         else if (argument == "--no-textures") state.options.textures = false;
         else if (argument == "--no-mipmaps") state.options.mipmapping = false;
+        else if (argument == "--no-shadows") state.options.shadows = false;
+        else if (argument == "--no-bloom") state.options.bloom = false;
         else if (argument == "--software") useSoftwareGl = true;
     }
     const bool offscreen = !capturePath.empty() || !animateDestination.empty();

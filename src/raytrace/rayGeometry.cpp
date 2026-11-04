@@ -69,6 +69,8 @@ void RayScene::addMesh(const MeshData& mesh, const Matrix4& model, int materialI
     const Matrix4 normalMatrix = model.inverse().transposed();
     const Color tint = materials[static_cast<std::size_t>(materialIndex)].tint;
     const Vec3 tintFactor{tint.r / 255.0, tint.g / 255.0, tint.b / 255.0};
+    // Colours are authored in sRGB; lighting maths needs LINEAR values (as in the shaders).
+    auto toLinear = [](const Vec3& color) { return Vec3(std::pow(color.x, 2.2), std::pow(color.y, 2.2), std::pow(color.z, 2.2)); };
 
     if (lines) {
         // A line has no area for a ray to hit: rebuild each segment as a thin 6-sided tube.
@@ -86,7 +88,7 @@ void RayScene::addMesh(const MeshData& mesh, const Matrix4& model, int materialI
     }
 
     auto colorOf = [&](const MeshVertex& vertex) {
-        return Vec3(vertex.color[0] * tintFactor.x, vertex.color[1] * tintFactor.y, vertex.color[2] * tintFactor.z);
+        return toLinear(Vec3(vertex.color[0] * tintFactor.x, vertex.color[1] * tintFactor.y, vertex.color[2] * tintFactor.z));
     };
     for (std::size_t index = 0; index + 2 < mesh.indices.size(); index += 3) {
         const MeshVertex& a = mesh.vertices[mesh.indices[index]];
@@ -117,6 +119,7 @@ void RayScene::build(const ParkScene& scene, const ParkFrame& frame) {
     for (const Instance& instance : frame.instances) {
         if (instance.material.lightBeam) continue;
         const MeshData* mesh = &scene.mesh(instance.mesh);
+        if (instance.mesh == MeshId::meadow) continue;  // the ground plane already covers the park; skip the 1.4 km meadow
         if (instance.mesh == MeshId::dreads) mesh = &frame.dreads;
         if (instance.mesh == MeshId::balloonStrings) mesh = &frame.balloonStrings;
         materials.push_back(instance.material);

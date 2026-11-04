@@ -67,7 +67,7 @@ bool ShaderProgram::build(const char* vertexSource, const char* fragmentSource, 
 
 GLint ShaderProgram::location(const char* name) {
     // Looking a uniform up by name is slow-ish, so remember each answer.
-    const auto found = uniformLocations.find(name);
+    const auto found = uniformLocations.find(name);  // keyed by the string literal's address
     if (found != uniformLocations.end()) return found->second;
     const GLint value = glGetUniformLocation(programId, name);
     uniformLocations.emplace(name, value);
@@ -82,6 +82,16 @@ void ShaderProgram::setVec3(const char* name, const Vec3& value) {
 void ShaderProgram::setColor(const char* name, Color value) {
     glUniform3f(location(name), value.r / 255.0f, value.g / 255.0f, value.b / 255.0f);
 }
+void ShaderProgram::setVec2(const char* name, double x, double y) { glUniform2f(location(name), static_cast<float>(x), static_cast<float>(y)); }
+
+void ShaderProgram::setVec3Array(const char* name, const std::vector<Vec3>& values) {
+    if (values.empty()) return;
+    std::vector<float> packed;
+    packed.reserve(values.size() * 3);
+    for (const Vec3& value : values) packed.insert(packed.end(), {static_cast<float>(value.x), static_cast<float>(value.y), static_cast<float>(value.z)});
+    glUniform3fv(location(name), static_cast<GLsizei>(values.size()), packed.data());
+}
+
 void ShaderProgram::setMatrix(const char* name, const Matrix4& value) {
     float columnMajor[16];
     value.toColumnMajor(columnMajor);
@@ -102,6 +112,7 @@ GpuMesh& GpuMesh::operator=(GpuMesh&& other) noexcept {
         std::swap(vertexArray, other.vertexArray);
         std::swap(vertexBuffer, other.vertexBuffer);
         std::swap(indexBuffer, other.indexBuffer);
+        std::swap(instanceBuffer, other.instanceBuffer);
         std::swap(indexCount, other.indexCount);
         std::swap(primitiveType, other.primitiveType);
     }
@@ -110,9 +121,10 @@ GpuMesh& GpuMesh::operator=(GpuMesh&& other) noexcept {
 
 void GpuMesh::release() {
     if (indexBuffer != 0) glDeleteBuffers(1, &indexBuffer);
+    if (instanceBuffer != 0) glDeleteBuffers(1, &instanceBuffer);
     if (vertexBuffer != 0) glDeleteBuffers(1, &vertexBuffer);
     if (vertexArray != 0) glDeleteVertexArrays(1, &vertexArray);
-    vertexArray = vertexBuffer = indexBuffer = 0;
+    vertexArray = vertexBuffer = indexBuffer = instanceBuffer = 0;
     indexCount = 0;
 }
 
@@ -121,6 +133,7 @@ void GpuMesh::upload(const MeshData& mesh, GLenum primitive) {
         glGenVertexArrays(1, &vertexArray);
         glGenBuffers(1, &vertexBuffer);
         glGenBuffers(1, &indexBuffer);
+        glGenBuffers(1, &instanceBuffer);
     }
     primitiveType = primitive;
     indexCount = static_cast<GLsizei>(mesh.indices.size());
@@ -141,6 +154,18 @@ void GpuMesh::upload(const MeshData& mesh, GLenum primitive) {
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(offsetof(MeshVertex, color)));
     glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(offsetof(MeshVertex, textureCoordinate)));
     for (GLuint attribute = 0; attribute < 4; ++attribute) glEnableVertexAttribArray(attribute);
+
+    // Per-instance attributes from the instance buffer: a mat4 takes four vec4 slots (4-7), then the tint (8).
+    glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+    const GLsizei instanceStride = instanceFloats * sizeof(float);
+    for (GLuint column = 0; column < 4; ++column) {
+        glVertexAttribPointer(4 + column, 4, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<void*>(column * 4 * sizeof(float)));
+        glEnableVertexAttribArray(4 + column);
+        glVertexAttribDivisor(4 + column, 1);
+    }
+    glVertexAttribPointer(8, 3, GL_FLOAT, GL_FALSE, instanceStride, reinterpret_cast<void*>(16 * sizeof(float)));
+    glEnableVertexAttribArray(8);
+    glVertexAttribDivisor(8, 1);
     glBindVertexArray(0);
 }
 
@@ -148,6 +173,14 @@ void GpuMesh::draw() const {
     if (vertexArray == 0 || indexCount == 0) return;
     glBindVertexArray(vertexArray);
     glDrawElements(primitiveType, indexCount, GL_UNSIGNED_INT, nullptr);
+}
+
+void GpuMesh::drawInstanced(const std::vector<float>& instanceData, int count) const {
+    if (vertexArray == 0 || indexCount == 0 || count <= 0) return;
+    glBindVertexArray(vertexArray);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceBuffer);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(instanceData.size() * sizeof(float)), instanceData.data(), GL_STREAM_DRAW);
+    glDrawElementsInstanced(primitiveType, indexCount, GL_UNSIGNED_INT, nullptr, count);
 }
 
 // ---------------------------------------------------------------------------
@@ -185,95 +218,4 @@ void Texture2D::setMipmapFiltering(bool enabled) {
 void Texture2D::bind(int textureUnit) const {
     glActiveTexture(GL_TEXTURE0 + static_cast<GLenum>(textureUnit));
     glBindTexture(GL_TEXTURE_2D, textureId);
-}
-
-// ---------------------------------------------------------------------------
-// RenderTarget
-// ---------------------------------------------------------------------------
-
-RenderTarget::~RenderTarget() {
-    if (multisampleFramebuffer != 0) glDeleteFramebuffers(1, &multisampleFramebuffer);
-    if (resolveFramebuffer != 0) glDeleteFramebuffers(1, &resolveFramebuffer);
-    const GLuint renderbuffers[3] = {multisampleColor, multisampleDepth, resolveColor};
-    for (GLuint renderbuffer : renderbuffers) {
-        if (renderbuffer != 0) glDeleteRenderbuffers(1, &renderbuffer);
-    }
-}
-
-bool RenderTarget::create(int widthValue, int heightValue, int sampleCount, std::string& errorOut) {
-    width = widthValue;
-    height = heightValue;
-
-    // Multisampled colour + depth (the depth buffer is what makes hidden-surface removal work).
-    glGenFramebuffers(1, &multisampleFramebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
-    glGenRenderbuffers(1, &multisampleColor);
-    glBindRenderbuffer(GL_RENDERBUFFER, multisampleColor);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, sampleCount, GL_RGBA8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, multisampleColor);
-    glGenRenderbuffers(1, &multisampleDepth);
-    glBindRenderbuffer(GL_RENDERBUFFER, multisampleDepth);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, sampleCount, GL_DEPTH_COMPONENT24, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, multisampleDepth);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        errorOut = "multisampled framebuffer incomplete";
-        return false;
-    }
-
-    // Single-sample colour buffer the samples are resolved into.
-    glGenFramebuffers(1, &resolveFramebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, resolveFramebuffer);
-    glGenRenderbuffers(1, &resolveColor);
-    glBindRenderbuffer(GL_RENDERBUFFER, resolveColor);
-    glRenderbufferStorageMultisample(GL_RENDERBUFFER, 0, GL_RGBA8, width, height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, resolveColor);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        errorOut = "resolve framebuffer incomplete";
-        return false;
-    }
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    return true;
-}
-
-void RenderTarget::bindForDrawing() const {
-    glBindFramebuffer(GL_FRAMEBUFFER, multisampleFramebuffer);
-    glViewport(0, 0, width, height);
-}
-
-void RenderTarget::resolve() const {
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, multisampleFramebuffer);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolveFramebuffer);
-    glBlitFramebuffer(0, 0, width, height, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-}
-
-void RenderTarget::presentToWindow(int windowWidth, int windowHeight) const {
-    // Largest 16:9 rectangle that fits the window, centred (letterboxing).
-    const double scale = std::min(static_cast<double>(windowWidth) / width, static_cast<double>(windowHeight) / height);
-    const int targetWidth = static_cast<int>(width * scale);
-    const int targetHeight = static_cast<int>(height * scale);
-    const int left = (windowWidth - targetWidth) / 2;
-    const int bottom = (windowHeight - targetHeight) / 2;
-
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    glViewport(0, 0, windowWidth, windowHeight);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFramebuffer);
-    glBlitFramebuffer(0, 0, width, height, left, bottom, left + targetWidth, bottom + targetHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
-}
-
-FrameBuffer RenderTarget::readBack() const {
-    std::vector<std::uint8_t> rgba(static_cast<std::size_t>(width) * height * 4);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, resolveFramebuffer);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, rgba.data());
-    FrameBuffer image(width, height);
-    for (int row = 0; row < height; ++row) {
-        const int sourceRow = height - 1 - row;  // OpenGL row 0 is the BOTTOM of the image
-        for (int x = 0; x < width; ++x) {
-            const std::uint8_t* pixel = &rgba[(static_cast<std::size_t>(sourceRow) * width + x) * 4];
-            image.setPixel(x, row, Color{pixel[0], pixel[1], pixel[2]});
-        }
-    }
-    return image;
 }

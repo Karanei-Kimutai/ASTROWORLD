@@ -90,12 +90,14 @@ if(glfw3_FOUND)
         src/glMain.cpp
         src/gl/glFunctions.cpp
         src/gl/glResources.cpp
+        src/gl/framePipeline.cpp
         src/mesh/meshBuilder.cpp
         src/glScene/overlayImage.cpp
         src/glScene/astroworldPark.cpp
         src/park3d/headModel.cpp
         src/park3d/parkModels.cpp
         src/park3d/parkScene.cpp
+        src/park3d/parkRides.cpp
         src/park3d/parkTextures.cpp
     )
     target_link_libraries(astroworldGl PRIVATE astroworldCore glfw ${CMAKE_DL_LIBS})
@@ -111,6 +113,7 @@ add_executable(astroworldRay
     src/park3d/headModel.cpp
     src/park3d/parkModels.cpp
     src/park3d/parkScene.cpp
+    src/park3d/parkRides.cpp
     src/park3d/parkTextures.cpp
     src/raytrace/rayGeometry.cpp
     src/raytrace/rayTracer.cpp

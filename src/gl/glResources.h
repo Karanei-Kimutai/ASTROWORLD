@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "core/frameBuffer.h"
 #include "gl/glFunctions.h"
@@ -36,12 +37,14 @@ public:
     void setVec3(const char* name, const Vec3& value);
     void setColor(const char* name, Color value);
     void setMatrix(const char* name, const Matrix4& value);
+    void setVec2(const char* name, double x, double y);
+    void setVec3Array(const char* name, const std::vector<Vec3>& values);
 
 private:
     GLint location(const char* name);
 
     GLuint programId = 0;
-    std::unordered_map<std::string, GLint> uniformLocations;
+    std::unordered_map<const char*, GLint> uniformLocations;  // names are string literals, so their address is a stable key
 };
 
 /**
@@ -67,12 +70,24 @@ public:
     /** @brief Issue the draw call. */
     void draw() const;
 
+    /** @brief Floats per instance: a column-major 4x4 model matrix and an RGB tint. */
+    static constexpr int instanceFloats = 19;
+
+    /**
+     * @brief GPU INSTANCING: draw 'count' copies of the mesh in ONE call. Each copy's
+     *        model matrix and tint arrive as per-instance vertex attributes
+     *        (locations 4-7 for the matrix columns, 8 for the tint), advanced once
+     *        per instance instead of once per vertex (glVertexAttribDivisor).
+     */
+    void drawInstanced(const std::vector<float>& instanceData, int count) const;
+
 private:
     void release();
 
     GLuint vertexArray = 0;
     GLuint vertexBuffer = 0;
     GLuint indexBuffer = 0;
+    GLuint instanceBuffer = 0;
     GLsizei indexCount = 0;
     GLenum primitiveType = GL_TRIANGLES;
 };
@@ -107,46 +122,4 @@ private:
     int width = 0;
     int height = 0;
     bool hasMipmaps = false;
-};
-
-/**
- * @brief The GPU's version of our FrameBuffer: an off-screen Frame Buffer Object.
- *
- * The scene is drawn into a MULTISAMPLED colour + depth buffer (MSAA: each
- * pixel stores several coverage samples, smoothing edges). It is then
- * "resolved" (samples averaged) into a normal colour buffer, which can be
- * shown in the window or read back to the CPU for screenshots and video.
- */
-class RenderTarget {
-public:
-    RenderTarget() = default;
-    ~RenderTarget();
-    RenderTarget(const RenderTarget&) = delete;
-    RenderTarget& operator=(const RenderTarget&) = delete;
-
-    bool create(int widthValue, int heightValue, int sampleCount, std::string& errorOut);
-
-    /** @brief Direct all following draw calls into the multisampled buffer. */
-    void bindForDrawing() const;
-
-    /** @brief Average the samples into the resolve buffer. */
-    void resolve() const;
-
-    /** @brief Copy the resolved image to the window, letterboxed to keep the aspect ratio. */
-    void presentToWindow(int windowWidth, int windowHeight) const;
-
-    /** @brief Read the resolved image back into a CPU FrameBuffer (flipping rows: GL's origin is bottom-left). */
-    FrameBuffer readBack() const;
-
-    int getWidth() const { return width; }
-    int getHeight() const { return height; }
-
-private:
-    GLuint multisampleFramebuffer = 0;
-    GLuint multisampleColor = 0;
-    GLuint multisampleDepth = 0;
-    GLuint resolveFramebuffer = 0;
-    GLuint resolveColor = 0;
-    int width = 0;
-    int height = 0;
 };

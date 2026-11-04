@@ -50,8 +50,12 @@ MeshData buildSignFace();                       // textured quad with the letter
 MeshData buildFence(double halfLength);
 MeshData buildBuntingFlags();                   // triangles (double-sided) and their poles
 MeshData buildBuntingStrings();                 // GL_LINES
-MeshData buildPersonTorso();                    // torso + head, feet at origin, facing +z
+MeshData buildPersonTorso();                    // chest + hips (tinted clothes), feet at origin, facing +z
+MeshData buildPersonHead();                     // neck, head (tinted skin tone) and hair
+MeshData buildPersonArm();                      // hangs down from its origin (the shoulder)
 MeshData buildPersonLeg();                      // hangs down from its origin (the hip)
+MeshData buildRider();                          // seated passenger's body, origin at the seat
+MeshData buildRiderHead();
 MeshData buildBalloon();
 
 /** @brief A chrome sphere sculpture on a plinth - shows off mirror reflections in the ray tracer. */

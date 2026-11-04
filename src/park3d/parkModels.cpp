@@ -98,9 +98,10 @@ std::vector<Vec3> buildCoasterTrackPath() {
     // track recedes in z as it runs right.
     std::vector<Vec3> controlPoints;
     for (const Vec2& point : coasterProfilePoints()) {
-        const double x = (point.x - 640.0) / 32.0 + 1.0;
-        const double height = (coasterProfileGroundY - point.y) / 32.0 * 1.25 + 0.3;
-        const double z = -12.0 - (point.x - 830.0) / 470.0 * 6.0;
+        const double along = (point.x - 830.0) / 470.0;  // 0 at the start of the profile, 1 at the end
+        const double x = -40.0 - along * 40.0;
+        const double height = (coasterProfileGroundY - point.y) / 265.0 * 22.0 + 0.4;
+        const double z = -18.0 - along * 80.0;
         controlPoints.push_back({x, height, z});
     }
     return sampleCatmullRomSpline3D(controlPoints, 24, false);
@@ -328,8 +329,8 @@ struct BuntingString {
     double sag;
 };
 const BuntingString buntingStrings[] = {
-    {{-3.4, 7.2, -1.2}, {-17.0, 5.6, -8.5}, 1.4}, {{-3.2, 4.8, 0.0}, {-12.5, 3.6, -8.0}, 0.9},
-    {{3.4, 7.2, -1.2}, {17.0, 5.6, -8.5}, 1.4},   {{3.2, 4.8, 0.0}, {12.5, 3.6, -8.0}, 0.9},
+    {{-5.4, 11.5, 0.5}, {-26.0, 7.0, 6.0}, 1.8}, {{-5.8, 7.5, 1.5}, {-18.0, 5.0, 11.0}, 1.2},
+    {{5.4, 11.5, 0.5}, {26.0, 7.0, 6.0}, 1.8},   {{5.8, 7.5, 1.5}, {18.0, 5.0, 11.0}, 1.2},
 };
 
 Vec3 buntingPoint(const BuntingString& string, double t) {
@@ -378,18 +379,54 @@ MeshData buildBuntingStrings() {
 }
 
 MeshData buildPersonTorso() {
-    // Built white; the renderer tints clothes per visitor. Feet at origin, facing +z.
+    // Built white so each visitor's clothes can be tinted. Feet at the origin, facing +z.
+    // Head, arms and legs are separate meshes: heads get skin tones, limbs swing.
     MeshData person;
-    person.append(makeCylinder(0.2, 0.62, 12, Color{240, 240, 240}), Matrix4::translation({0, 0.85, 0}));
-    person.append(makeEllipsoid({0.2, 0.08, 0.2}, 12, 6, Color{240, 240, 240}), Matrix4::translation({0, 1.47, 0}));
-    person.append(makeEllipsoid({0.13, 0.15, 0.13}, 12, 8, Color{150, 105, 80}), Matrix4::translation({0, 1.68, 0}));
-    for (double side : {-1.0, 1.0}) {
-        person.append(makeCylinderBetween({side * 0.24, 1.42, 0}, {side * 0.28, 0.9, 0.05}, 0.06, 8, Color{240, 240, 240}));
-    }
+    person.append(makeEllipsoid({0.2, 0.32, 0.13}, 16, 10, astroPalette::white), Matrix4::translation({0, 1.22, 0}));   // chest
+    person.append(makeEllipsoid({0.18, 0.16, 0.12}, 14, 8, Color{200, 200, 200}), Matrix4::translation({0, 0.92, 0}));  // hips
     return person;
 }
 
-MeshData buildPersonLeg() { return makeCylinderBetween({0, 0, 0}, {0, -0.85, 0}, 0.08, 8, Color{60, 70, 110}); }
+MeshData buildPersonHead() {
+    // White skin (tinted to each visitor's skin tone) with darker hair. Origin at the feet.
+    MeshData head;
+    head.append(makeCylinderBetween({0, 1.48, 0}, {0, 1.56, 0}, 0.06, 8, astroPalette::white));
+    head.append(makeEllipsoid({0.11, 0.135, 0.12}, 16, 10, astroPalette::white), Matrix4::translation({0, 1.66, 0.01}));
+    head.append(makeEllipsoid({0.118, 0.09, 0.125}, 16, 8, Color{58, 46, 40}), Matrix4::translation({0, 1.73, -0.01}));
+    return head;
+}
+
+MeshData buildPersonArm() {
+    // Hangs down from its origin (the shoulder).
+    MeshData arm;
+    arm.append(makeCylinderBetween({0, 0, 0}, {0, -0.62, 0}, 0.055, 8, astroPalette::white));
+    arm.append(makeEllipsoid({0.05, 0.06, 0.05}, 8, 6, Color{176, 124, 92}), Matrix4::translation({0, -0.66, 0}));
+    return arm;
+}
+
+MeshData buildPersonLeg() {
+    // Hangs down from its origin (the hip); jeans and a shoe.
+    MeshData leg;
+    leg.append(makeCylinderBetween({0, 0, 0}, {0, -0.82, 0}, 0.075, 8, Color{60, 66, 90}));
+    leg.append(makeBox({0.11, 0.08, 0.24}, Color{230, 230, 230}), Matrix4::translation({0, -0.86, 0.05}));
+    return leg;
+}
+
+MeshData buildRider() {
+    // A seated passenger's body, from the seat up (origin at the seat, facing +z); tinted per rider.
+    MeshData rider;
+    rider.append(makeEllipsoid({0.19, 0.3, 0.13}, 14, 8, astroPalette::white), Matrix4::translation({0, 0.35, -0.05}));
+    for (double side : {-0.1, 0.1}) rider.append(makeCylinderBetween({side, 0.05, 0.0}, {side, 0.05, 0.4}, 0.07, 8, Color{90, 96, 120}));
+    for (double side : {-0.24, 0.24}) rider.append(makeCylinderBetween({side, 0.55, -0.05}, {side * 1.2, 0.9, 0.15}, 0.05, 8, astroPalette::white));  // arms up!
+    return rider;
+}
+
+MeshData buildRiderHead() {
+    MeshData head;
+    head.append(makeEllipsoid({0.11, 0.135, 0.12}, 14, 8, astroPalette::white), Matrix4::translation({0, 0.8, -0.04}));
+    head.append(makeEllipsoid({0.118, 0.09, 0.125}, 14, 6, Color{58, 46, 40}), Matrix4::translation({0, 0.87, -0.06}));
+    return head;
+}
 
 MeshData buildMirrorBallPlinth() {
     MeshData plinth;

@@ -30,6 +30,7 @@
 #define ASTRO_GL_FUNCTIONS(X)                                              \
     /* state and frame */                                                  \
     X(PFNGLCLEARPROC, glClear)                                             \
+    X(PFNGLFINISHPROC, glFinish)                                           \
     X(PFNGLCLEARCOLORPROC, glClearColor)                                   \
     X(PFNGLENABLEPROC, glEnable)                                           \
     X(PFNGLDISABLEPROC, glDisable)                                         \
@@ -40,11 +41,14 @@
     X(PFNGLCULLFACEPROC, glCullFace)                                       \
     X(PFNGLLINEWIDTHPROC, glLineWidth)                                     \
     X(PFNGLPOLYGONMODEPROC, glPolygonMode)                                 \
+    X(PFNGLPOLYGONOFFSETPROC, glPolygonOffset)                             \
     X(PFNGLGETSTRINGPROC, glGetString)                                     \
     X(PFNGLGETERRORPROC, glGetError)                                       \
     X(PFNGLGETINTEGERVPROC, glGetIntegerv)                                 \
     X(PFNGLREADPIXELSPROC, glReadPixels)                                   \
     X(PFNGLPIXELSTOREIPROC, glPixelStorei)                                 \
+    X(PFNGLDRAWBUFFERPROC, glDrawBuffer)                                   \
+    X(PFNGLREADBUFFERPROC, glReadBuffer)                                   \
     /* shaders and programs */                                             \
     X(PFNGLCREATESHADERPROC, glCreateShader)                               \
     X(PFNGLSHADERSOURCEPROC, glShaderSource)                               \
@@ -63,6 +67,8 @@
     X(PFNGLUNIFORM1IPROC, glUniform1i)                                     \
     X(PFNGLUNIFORM1FPROC, glUniform1f)                                     \
     X(PFNGLUNIFORM3FPROC, glUniform3f)                                     \
+    X(PFNGLUNIFORM2FPROC, glUniform2f)                                     \
+    X(PFNGLUNIFORM3FVPROC, glUniform3fv)                                   \
     X(PFNGLUNIFORMMATRIX4FVPROC, glUniformMatrix4fv)                       \
     /* vertex data */                                                      \
     X(PFNGLGENVERTEXARRAYSPROC, glGenVertexArrays)                         \
@@ -74,8 +80,10 @@
     X(PFNGLDELETEBUFFERSPROC, glDeleteBuffers)                             \
     X(PFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer)                 \
     X(PFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray)         \
+    X(PFNGLVERTEXATTRIBDIVISORPROC, glVertexAttribDivisor)                 \
     X(PFNGLDRAWARRAYSPROC, glDrawArrays)                                   \
     X(PFNGLDRAWELEMENTSPROC, glDrawElements)                               \
+    X(PFNGLDRAWELEMENTSINSTANCEDPROC, glDrawElementsInstanced)             \
     /* textures */                                                         \
     X(PFNGLGENTEXTURESPROC, glGenTextures)                                 \
     X(PFNGLBINDTEXTUREPROC, glBindTexture)                                 \
@@ -89,6 +97,7 @@
     X(PFNGLBINDFRAMEBUFFERPROC, glBindFramebuffer)                         \
     X(PFNGLDELETEFRAMEBUFFERSPROC, glDeleteFramebuffers)                   \
     X(PFNGLFRAMEBUFFERRENDERBUFFERPROC, glFramebufferRenderbuffer)         \
+    X(PFNGLFRAMEBUFFERTEXTURE2DPROC, glFramebufferTexture2D)               \
     X(PFNGLCHECKFRAMEBUFFERSTATUSPROC, glCheckFramebufferStatus)           \
     X(PFNGLGENRENDERBUFFERSPROC, glGenRenderbuffers)                       \
     X(PFNGLBINDRENDERBUFFERPROC, glBindRenderbuffer)                       \
@@ -103,6 +112,15 @@ ASTRO_GL_FUNCTIONS(ASTRO_GL_DECLARE)
 
 // Standard names map onto our pointers.
 #define glClear astroGl_glClear
+#define glFinish astroGl_glFinish
+#define glVertexAttribDivisor astroGl_glVertexAttribDivisor
+#define glDrawElementsInstanced astroGl_glDrawElementsInstanced
+#define glDrawBuffer astroGl_glDrawBuffer
+#define glPolygonOffset astroGl_glPolygonOffset
+#define glUniform2f astroGl_glUniform2f
+#define glReadBuffer astroGl_glReadBuffer
+#define glUniform3fv astroGl_glUniform3fv
+#define glFramebufferTexture2D astroGl_glFramebufferTexture2D
 #define glClearColor astroGl_glClearColor
 #define glEnable astroGl_glEnable
 #define glDisable astroGl_glDisable
