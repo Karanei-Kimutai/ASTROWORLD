@@ -4,6 +4,7 @@
 # Usage:
 #   tools/blender/render.sh scene                 # export + build output/blender/astroworld.blend (open it in Blender)
 #   tools/blender/render.sh still [frame]         # + render one frame with EEVEE  -> output/blender/still.png
+#   tools/blender/render.sh stills 1,241,433 [w h samples]  # + preview several frames -> output/blender/stills/
 #   tools/blender/render.sh cycles [frame]        # + render one frame with Cycles -> output/blender/still_cycles.png
 #   tools/blender/render.sh animation             # + render every frame with EEVEE -> output/blender/frames/, then MP4
 #
@@ -49,6 +50,12 @@ case "$mode" in
         ;;
     still)
         "$blender" -b -P "$script" -- --data "$data" --render still --frame "$frame" --output "$(toBlenderPath "$dataDirectory/still.png")"
+        ;;
+    stills)
+        # Preview sheet: tools/blender/render.sh stills 1,145,241,313,433,553,649,720 [width height samples]
+        mkdir -p "$dataDirectory/stills"
+        "$blender" -b -P "$script" -- --data "$data" --render stills --frames "$frame" \
+            --width "${3:-640}" --height "${4:-360}" --samples "${5:-16}" --output "$(toBlenderPath "$dataDirectory/stills")"
         ;;
     cycles)
         "$blender" -b -P "$script" -- --data "$data" --engine cycles --samples 128 --render still --frame "$frame" \
