@@ -46,7 +46,19 @@ blend="$(toBlenderPath "$dataDirectory/astroworld.blend")"
 case "$mode" in
     scene)
         "$blender" -b -P "$script" -- --data "$data" --save "$blend"
-        echo "Open in Blender: $(wslpath -w "$dataDirectory/astroworld.blend")  (allow its Python script so the animation plays)"
+        # Windows Blender can refuse to open a .blend from the \\wsl.localhost share ("Permission denied"),
+        # so for a Windows install the scene and its data files (the player reads frames.bin next to the
+        # .blend) are also copied to Documents\ASTROWORLD-Blender on the Windows drive.
+        case "$blender" in
+            *.exe)
+                windowsProfile="$(cd /mnt/c && cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')"
+                windowsCopy="$(wslpath -u "$windowsProfile")/Documents/ASTROWORLD-Blender"
+                mkdir -p "$windowsCopy"
+                cp "$dataDirectory"/{astroworld.blend,frames.bin,meshes.bin,meshes.json,objects.json,lighting.json,ground.bmp,sign.bmp} "$windowsCopy/"
+                echo "Open in Blender: $(wslpath -w "$windowsCopy/astroworld.blend")  (allow its Python script so the animation plays)"
+                ;;
+            *) echo "Open in Blender: $dataDirectory/astroworld.blend  (allow its Python script so the animation plays)" ;;
+        esac
         ;;
     still)
         "$blender" -b -P "$script" -- --data "$data" --render still --frame "$frame" --output "$(toBlenderPath "$dataDirectory/still.png")"
