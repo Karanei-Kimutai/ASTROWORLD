@@ -46,7 +46,7 @@ blend="$(toBlenderPath "$dataDirectory/astroworld.blend")"
 case "$mode" in
     scene)
         "$blender" -b -P "$script" -- --data "$data" --save "$blend"
-        echo "Open $dataDirectory/astroworld.blend in Blender (allow its Python script to run so the animation plays)."
+        echo "Open in Blender: $(wslpath -w "$dataDirectory/astroworld.blend")  (allow its Python script so the animation plays)"
         ;;
     still)
         "$blender" -b -P "$script" -- --data "$data" --render still --frame "$frame" --output "$(toBlenderPath "$dataDirectory/still.png")"

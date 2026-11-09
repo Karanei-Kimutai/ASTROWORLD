@@ -58,15 +58,19 @@ FPS = OBJECTS["fps"]
 FRAMES = np.fromfile(os.path.join(DATA, "frames.bin"), dtype=np.float32).reshape(len(OBJECTS["objects"]), FRAME_COUNT, 16)
 MESH_BIN = np.fromfile(os.path.join(DATA, "meshes.bin"), dtype=np.uint8)
 
-LIGHT_SCALE = 60.0       # our point-light radiance -> Blender watts
-SUN_SCALE = 1.7          # our sun radiance -> Blender sun strength (W/m^2)
 EMISSION_SCALE = 1.0     # our emission strength -> Blender emission strength
-EXPOSURE = -0.7          # film exposure in stops (AgX), tuned by eye on the preview sheets
 
 # ---------------------------------------------------------------------------------------------
 # Scene reset
 # ---------------------------------------------------------------------------------------------
 bpy.ops.wm.read_factory_settings(use_empty=True)
+# The animation player lives in the .blend as a registered text block, so opening the saved file
+# in Blender (and allowing its script) makes the park move. Imported from that same text here.
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "astroworldPlayer.py")) as f:
+    player_text = bpy.data.texts.new("astroworldPlayer.py")
+    player_text.write(f.read())
+player_text.use_module = True
+player = player_text.as_module()
 scene = bpy.context.scene
 scene.render.fps = FPS
 scene.frame_start = 1
@@ -74,10 +78,6 @@ scene.frame_end = FRAME_COUNT
 root = bpy.data.objects.new("ASTROWORLD", None)
 root.rotation_euler = (math.pi / 2.0, 0.0, 0.0)  # our y-up -> Blender z-up
 scene.collection.objects.link(root)
-
-
-def srgb_to_linear(values):
-    return np.power(np.clip(values, 0.0, 1.0), 2.2)
 
 
 def array(offset, count, dtype):
@@ -112,7 +112,7 @@ def build_mesh(name, info):
 
     # Vertex colours are sRGB in the export; Blender's float colour attributes are linear.
     rgba = np.ones((vertex_count, 4), dtype=np.float32)
-    rgba[:, :3] = srgb_to_linear(colors)
+    rgba[:, :3] = player.srgb_to_linear(colors)
     attribute = mesh.color_attributes.new("Col", "FLOAT_COLOR", "POINT")
     attribute.data.foreach_set("color", rgba.ravel())
     uv_layer = mesh.uv_layers.new(name="UVMap")
@@ -282,19 +282,6 @@ ANIMATED = []        # (object, index) pairs moved by the frame handler
 SEARCHLIGHTS = []    # (light object, index): beams become volumetric spot lights
 
 
-EMISSION_BY_MESH = {"tunnel": 0.15}  # per-mesh emission trims, tuned by eye
-
-
-def object_color(row, mesh=""):
-    """Object colour = (linear tint RGB, emission / 20). Our tints are sRGB, Blender shades in linear."""
-    tint = srgb_to_linear(np.asarray(row[12:15], dtype=np.float32))
-    return (float(tint[0]), float(tint[1]), float(tint[2]), float(row[15]) / 20.0 * EMISSION_BY_MESH.get(mesh, 1.0))
-
-
-def to_blender_matrix(row):
-    return Matrix(((row[0], row[1], row[2], row[3]), (row[4], row[5], row[6], row[7]), (row[8], row[9], row[10], row[11]), (0, 0, 0, 1)))
-
-
 for index, entry in enumerate(OBJECTS["objects"]):
     first = FRAMES[index, 0]
     if entry["lightBeam"]:
@@ -318,8 +305,8 @@ for index, entry in enumerate(OBJECTS["objects"]):
         mesh.materials.append(None)
     blender_object.material_slots[0].link = "OBJECT"
     blender_object.material_slots[0].material = material_for(entry)
-    blender_object.matrix_basis = to_blender_matrix(first)
-    blender_object.color = object_color(first, entry["mesh"])
+    blender_object.matrix_basis = player.to_blender_matrix(first)
+    blender_object.color = player.object_color(first, entry["mesh"])
     if entry["mesh"] == "dreads":
         modifier = blender_object.modifiers.new("Smooth", "SUBSURF")
         modifier.levels = 1
@@ -383,6 +370,7 @@ world.use_nodes = True
 wn, wl = world.node_tree.nodes, world.node_tree.links
 background = wn["Background"]
 sky = wn.new("ShaderNodeTexSky")
+sky.name = "daySky"  # the player finds world nodes by name
 # Physical sky: called NISHITA up to Blender 4.x, MULTIPLE_SCATTERING from Blender 5.
 sky_types = [item.identifier for item in sky.bl_rna.properties["sky_type"].enum_items]
 for candidate in ("MULTIPLE_SCATTERING", "NISHITA"):
@@ -397,6 +385,7 @@ day_background = wn.new("ShaderNodeBackground")
 day_background.inputs["Strength"].default_value = 0.6
 wl.new(sky.outputs["Color"], day_background.inputs["Color"])
 night_gradient = wn.new("ShaderNodeValToRGB")
+night_gradient.name = "nightGradient"
 # The viewing direction = -Incoming (Generated coordinates are constant on the world background).
 geometry = wn.new("ShaderNodeNewGeometry")
 view_direction = wn.new("ShaderNodeVectorMath")
@@ -430,6 +419,7 @@ night_background = wn.new("ShaderNodeBackground")
 wl.new(night_mix.outputs[2], night_background.inputs["Color"])
 night_background.inputs["Strength"].default_value = 1.0
 world_mix = wn.new("ShaderNodeMixShader")
+world_mix.name = "dayNightMix"
 wl.new(day_background.outputs[0], world_mix.inputs[1])
 wl.new(night_background.outputs[0], world_mix.inputs[2])
 wl.new(world_mix.outputs[0], wn["World Output"].inputs["Surface"])
@@ -438,90 +428,16 @@ wn.remove(background)
 # get their own local haze instead (see beam_material).
 
 
-def linear_color(rgb):
-    return tuple(float(c) for c in srgb_to_linear(np.array(rgb, dtype=np.float32) / 255.0)) + (1.0,)
-
-
-def set_night_gradient(frame_lighting):
-    elements = night_gradient.color_ramp.elements
-    # Our engine's night sky is tuned for its own tone mapper; here it is lifted so the sky reads as a
-    # deep purple-blue and also lights the park a little (moonlit ambience), with a magenta horizon glow.
-    horizon = np.array(linear_color(frame_lighting["skyHorizon"])[:3]) * 1.2
-    top = np.maximum(np.array(linear_color(frame_lighting["skyTop"])[:3]) * 12.0, (0.012, 0.009, 0.05))
-    elements[0].position, elements[0].color = 0.5, tuple(horizon) + (1.0,)
-    elements[1].position, elements[1].color = 0.7, tuple(top) + (1.0,)
-
-
 # ---------------------------------------------------------------------------------------------
-# Per-frame update: transforms, tints/emission, lights, sky - all from the export
+# Per-frame update: astroworldPlayer applies transforms, tints/emission, lights and sky from the
+# export, and is embedded in the .blend so the animation also plays when the file is opened.
 # ---------------------------------------------------------------------------------------------
-dread_objects = [o for o in park.objects if o.data is not None and getattr(o.data, "name", "") == "dreads"]
-
-
-def our_direction_to_blender(direction):
-    return Vector((direction[0], -direction[2], direction[1]))
+scene["astroworldData"] = DATA
+player.register(player.Player(DATA))
 
 
 def apply_frame(frame_float):
-    position = min(max(frame_float - 1.0, 0.0), FRAME_COUNT - 1.0)
-    low = int(math.floor(position))
-    high = min(low + 1, FRAME_COUNT - 1)
-    t = position - low
-
-    rows = FRAMES[ANIMATED_INDICES, low] * (1.0 - t) + FRAMES[ANIMATED_INDICES, high] * t
-    for (blender_object, _), row in zip(ANIMATED, rows):
-        blender_object.matrix_basis = to_blender_matrix(row)
-        blender_object.color = object_color(row, blender_object.name.rsplit(".", 1)[0])
-    for light_object, index in SEARCHLIGHTS:
-        row = FRAMES[index, low]
-        matrix = to_blender_matrix(row)
-        # Spot lights shine down their local -z; the beam mesh points along its local +y.
-        light_object.matrix_basis = matrix @ Matrix.Rotation(-math.pi / 2.0, 4, "X")
-        light_object.data.energy = 2.5e5 * float(np.mean(row[12:15]))
-        light_object.data.color = tuple(float(c) / max(float(np.max(row[12:15])), 1e-3) for c in row[12:15])
-
-    lighting = LIGHTING["frames"][low]
-    night = float(lighting["night"])
-    # A real sunset: the sun sinks below the horizon as night falls.
-    day_direction = our_direction_to_blender(LIGHTING["frames"][0]["sunDirection"])
-    azimuth = math.atan2(day_direction.y, day_direction.x)
-    elevation = math.radians(34.0) * (1.0 - night) + math.radians(-8.0) * night
-    sun_direction = Vector((math.cos(elevation) * math.cos(azimuth), math.cos(elevation) * math.sin(azimuth), math.sin(elevation)))
-    # A sun lamp shines along its local -Z: point that axis away from the sun, i.e. along -sun_direction.
-    sun.rotation_euler = (-sun_direction).to_track_quat("-Z", "Y").to_euler()
-    sun_data.energy = max(0.0, SUN_SCALE * 3.0 * math.sin(max(elevation, 0.0)) / math.sin(math.radians(34.0)))
-    moon_elevation, moon_azimuth = math.radians(42.0), azimuth + math.radians(150.0)
-    moon_direction = Vector((math.cos(moon_elevation) * math.cos(moon_azimuth), math.cos(moon_elevation) * math.sin(moon_azimuth), math.sin(moon_elevation)))
-    moon.rotation_euler = (-moon_direction).to_track_quat("-Z", "Y").to_euler()
-    moon_data.energy = 1.0 * night
-    scene.view_settings.exposure = EXPOSURE + math.log2(float(lighting["exposure"]) / float(LIGHTING["frames"][0]["exposure"]))
-    if hasattr(sky, "sun_elevation"):
-        sky.sun_elevation = elevation
-        sky.sun_rotation = math.pi / 2.0 - azimuth
-    world_mix.inputs[0].default_value = min(1.0, night * 1.4)
-    set_night_gradient(lighting)
-
-    for slot, light_object in enumerate(POINT_LIGHTS):
-        if slot < len(lighting["lights"]):
-            light_position, radiance = lighting["lights"][slot]
-            light_object.location = light_position
-            strength = max(radiance)
-            light_object.data.energy = LIGHT_SCALE * strength
-            light_object.data.color = tuple(c / max(strength, 1e-6) for c in radiance)
-        else:
-            light_object.data.energy = 0.0
-
-    for dread in dread_objects:
-        if dread.data.shape_keys:
-            dread.data.shape_keys.key_blocks["Sway"].value = float(lighting["dreadSway"])
-
-
-def on_frame_change(scene_value, depsgraph=None):
-    apply_frame(scene_value.frame_current + scene_value.frame_subframe)
-
-
-bpy.app.handlers.frame_change_pre.clear()
-bpy.app.handlers.frame_change_pre.append(on_frame_change)
+    player._player.apply(scene, frame_float)
 
 # ---------------------------------------------------------------------------------------------
 # Camera: a designed fly-through (times in seconds, positions in OUR coordinates)
@@ -575,7 +491,7 @@ for look in ("AgX - Punchy", "Punchy"):  # the look's name differs between Blend
         break
     except TypeError:
         continue
-scene.view_settings.exposure = EXPOSURE
+scene.view_settings.exposure = player.EXPOSURE
 if args.engine == "cycles":
     render.engine = "CYCLES"
     scene.cycles.samples = args.samples
