@@ -1,12 +1,105 @@
 # ASTROWORLD
 
-An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
+An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant gold head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-The `photorealism` branch turns the 3D park into a photoreal, living theme park: the inflatable gold head is the entrance gate, crowds walk through its mouth into a park full of rides, and everything is lit with physically based shading, shadows and HDR. See [the photorealism section](#photorealism--a-living-photoreal-park).
+**Latest:** the park rendered in **Blender**. Our engine exports the scene and animation, and Blender renders them with a hand-sculpted inflatable head, a physical sky that sets into a starry night, searchlight haze and a camera fly-through. The roller coaster now runs a closed circuit. See [the latest work](#latest--the-park-rendered-in-blender), then [the journey](#the-journey--roadmap-and-branches) from pure C++ primitives to here.
+
+![ASTROWORLD rendered in Blender - arriving at the gate](docs/screenshots/blenderGate.png)
+
+| Night in the park | The aerial view at dawn |
+|---|---|
+| ![Night](docs/screenshots/blenderNight.png) | ![Aerial](docs/screenshots/blenderAerial.png) |
+
+---
+
+## Contents
+
+1. [Latest – the park rendered in Blender](#latest--the-park-rendered-in-blender)
+2. [The journey – roadmap and branches](#the-journey--roadmap-and-branches)
+3. [Building and running](#building-and-running)
+4. [Project structure](#project-structure)
+5. [Course concepts → where they live in the code](#course-concepts--where-they-live-in-the-code)
+6. [How the software renderer maps to the rendering pipeline](#how-the-software-renderer-maps-to-the-rendering-pipeline)
+7. [Coding conventions](#coding-conventions)
+8. [Checkpoint log](#checkpoint-log), from Checkpoint 1 to the [final report (Checkpoint 4)](#checkpoint-4--final-demonstration), then the [photorealism](#photorealism--a-living-photoreal-park) side project
+
+---
+
+## Latest – the park rendered in Blender
+
+*Branch `blender` (also on `main`), built on `photorealism`. A side project beyond the brief, and the most recent work.* Our C++ engine stays the **single source of truth** for the park's geometry and motion. It exports them, and Blender adds what a production renderer does best: physically based materials, a physical sky, volumetric light, depth of field and motion blur.
+
+| The sculpted head's mouth | Walking through the glowing tunnel | The swing ride at night |
+|---|---|---|
+| ![Mouth](docs/screenshots/blenderMouth.png) | ![Tunnel](docs/screenshots/blenderTunnel.png) | ![Swing ride at night](docs/screenshots/blenderSwing.png) |
+
+### How it works
+
+| Step | What happens |
+|---|---|
+| **Export** ([exportMain.cpp](src/exportMain.cpp)) | `astroworldExport` samples `ParkScene` every frame (24 fps × 30 s). It writes every mesh once (`meshes.bin/json`), every object's 3×4 model matrix, tint and emission per frame (`frames.bin`), the per-frame lighting (sun, sky colours, point lights, exposure, dread sway: `lighting.json`) and the textures. |
+| **Build** ([buildAstroworld.py](tools/blender/buildAstroworld.py)) | Blender rebuilds the meshes with bulk `foreach_set` calls and shares each mesh between its instances, so 140 visitors use one torso mesh. It assigns Principled BSDF materials (gold vinyl with a clear coat, chrome, textured paving), a physical sky with a sunset and a starry night, searchlights as spot lights inside glowing haze, AgX colour, a bloom pass, motion blur and the camera fly-through. |
+| **Play** ([astroworldPlayer.py](tools/blender/astroworldPlayer.py)) | A frame-change handler applies the exported frame (with sub-frame interpolation for motion blur). It is **embedded in the `.blend`** as a registered text block, so the park also moves when the file is opened in Blender. |
+| **Sculpted head** ([assets/blender/head.blend](assets/blender/head.blend)) | The inflatable head, dreads and mouth tunnel were sculpted by hand in Blender, to the clearance constraints the visitors' walking path needs. The build swaps them into the existing objects, so they keep their material, glow and animation. The dreads get a procedural wind-sway shape key. |
+
+### Running it
+Blender 4.2+ is needed (developed on Blender 5.2, a Windows install driven from WSL):
+
+```bash
+tools/blender/render.sh scene                       # build the .blend (also copied to Documents\ASTROWORLD-Blender on Windows)
+tools/blender/render.sh stills 1,145,313,720        # quick preview frames -> output/blender/stills/
+tools/blender/render.sh still 313                   # one full-quality EEVEE frame
+tools/blender/render.sh cycles 313                  # one path-traced Cycles frame
+tools/blender/render.sh animation                   # all 720 frames -> output/astroworldBlender.mp4
+```
+
+`HEAD=none` uses our procedural head instead of the sculpt, and `HEAD_PARTS=dreads` uses only some parts of it.
+
+### A closed-circuit roller coaster
+The coaster used to be the 2D side profile lifted into 3D: the train rose out of the ground and vanished at the far end. It is now a **closed circuit** in the north-west corner of the park ([parkModels.cpp](src/park3d/parkModels.cpp)):
+- **The ride:** station → chain lift to 24 m → first drop into a climbing turnaround → camelback hills down the west side → a sweeping turn back east → brake run → station.
+- **Track shape:** 15 control points sampled as a **closed Catmull–Rom spline**, so the end joins the start smoothly.
+- **Train speed** ([parkScene.cpp](src/park3d/parkScene.cpp)), integrated along the track by arc length:
+  - fixed speeds in the station (2.5 m/s) and on the chain lift (4 m/s)
+  - after the crest, **energy conservation with rolling friction**: ½v² = ½v_c² + g(h_c − h) − μgs
+  - a brake run that caps the speed at √(v_station² + 2·a·d), so the train glides back into the station
+- **Seamless loop:** the train reaches ~21.5 m/s (77 km/h) at the bottom of the first drop, and one lap takes 30 s, exactly one animation loop.
+
+![The closed coaster circuit (OpenGL, aerial)](docs/screenshots/coasterCircuit.png)
+
+### Lessons learned
+- **Per-object modifiers are expensive:** a Subdivision modifier on each of ~500 visitors made every frame take 150 s, even at 64×36 pixels. Subdividing the *shared* meshes once brought a 720p frame down to ~16–34 s.
+- **No world-wide volume in EEVEE:** it dimmed the whole night scene to black. Local volumes (the searchlight cones, the mouth haze) give the same effect cheaply.
+- **Read data in one go:** Windows Blender reads WSL files over a network share (`\\wsl.localhost`), where memory-mapping `frames.bin` was slow. The same share is why Blender couldn't open a `.blend` stored there.
+
+---
+
+## The journey – roadmap and branches
+
+Each checkpoint has its own branch, created from the previous one, so every stage can be checked out and run exactly as it was submitted.
+
+| Branch | Stage | Focus |
+|---|---|---|
+| `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
+| `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
+| `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
+| `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
+| `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
+| `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
+| `photorealism` | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
+| `blender` | **Beyond the brief** | The park exported from our engine and rendered in Blender (EEVEE/Cycles): a hand-sculpted inflatable head, physical sky with a real sunset, searchlight haze, camera fly-through. Also a closed-circuit roller coaster. |
+
+`main` holds the latest work (it is fast-forwarded to the newest branch); the checkpoint branches stay as they were submitted. The branch chain is linear: `checkpoint-1` → `checkpoint-1-window` → `checkpoint-2` → `checkpoint-3` → `prototype` → `final` → `photorealism` → `blender`.
+
+### The park through each stage, newest first
+
+**Blender (side project):** the image at the top of this README, rendered from our engine's export. See [Latest](#latest--the-park-rendered-in-blender).
+
+**Photorealism (side project):** the real-time OpenGL park with PBR, shadows and HDR. See [the photorealism section](#photorealism--a-living-photoreal-park).
 
 ![The photoreal park at night](docs/screenshots/photoGateNight.png)
 
-The same park is drawn by **three renderers that we wrote**:
+**The graded checkpoints:** the same park is drawn by **three renderers that we wrote**:
 - a 2D software rasterizer (CP1/CP2)
 - a real-time OpenGL 3D renderer (CP3, prototype)
 - a CPU ray tracer and path tracer (final)
@@ -22,37 +115,6 @@ The same park is drawn by **three renderers that we wrote**:
 | Day (album cover) | Night (starfield artwork) |
 |---|---|
 | ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
-
----
-
-## Contents
-
-1. [Project roadmap and branches](#project-roadmap-and-branches)
-2. [Building and running](#building-and-running)
-3. [Project structure](#project-structure)
-4. [Course concepts → where they live in the code](#course-concepts--where-they-live-in-the-code)
-5. [How the software renderer maps to the rendering pipeline](#how-the-software-renderer-maps-to-the-rendering-pipeline)
-6. [Coding conventions](#coding-conventions)
-7. [Checkpoint log](#checkpoint-log), ending with the [final report (Checkpoint 4)](#checkpoint-4--final-demonstration)
-
----
-
-## Project roadmap and branches
-
-Each checkpoint has its own branch, created from the previous one, so every stage can be checked out and run exactly as it was submitted.
-
-| Branch | Stage | Focus |
-|---|---|---|
-| `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
-| `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
-| `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
-| `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
-| `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
-| `photorealism` | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
-| `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
-| `blender` | **Beyond the brief** | The park exported from our engine and rendered in Blender (EEVEE/Cycles): a hand-sculpted inflatable head, physical sky with a real sunset, searchlight haze, camera fly-through. Also a closed-circuit roller coaster. |
-
-`main` holds the latest work (it is fast-forwarded to the newest branch); the checkpoint branches stay as they were submitted. The branch chain is linear: `checkpoint-1` → `checkpoint-1-window` → `checkpoint-2` → `checkpoint-3` → `prototype` → `final` → `photorealism` → `blender`.
 
 ---
 
@@ -724,55 +786,3 @@ One-, two- and three-point perspective:
   Instancing cut draw calls from ~2,750 to ~300 per frame but didn't change fps much, which shows the integrated GPU's fragment work is now the limit. A discrete GPU would run it far faster.
 - **Ray tracing cost:** the ray tracer now sees ~690,000 triangles. A 1280×720 Whitted frame takes ~13 s by day; path tracing takes about a minute at 960×540 with 48 samples and is still grainy.
 - **Still stylised:** the visitors and trees are built from simple primitives. The head is sculpted procedurally rather than modelled, so its face is softer than the photographed inflatable.
-
----
-
-## Blender – the park rendered in Blender
-
-*Branch `blender`, built on `photorealism`. A side project beyond the brief.* Our C++ engine stays the **single source of truth** for the park's geometry and motion. It exports them, and Blender adds what a production renderer does best: physically based materials, a physical sky, volumetric light, depth of field and motion blur.
-
-| Arriving at the gate (day) | The mouth |
-|---|---|
-| ![Gate](docs/screenshots/blenderGate.png) | ![Mouth](docs/screenshots/blenderMouth.png) |
-| ![Tunnel](docs/screenshots/blenderTunnel.png) | ![Night](docs/screenshots/blenderNight.png) |
-| ![Swing ride at night](docs/screenshots/blenderSwing.png) | ![Aerial at dawn](docs/screenshots/blenderAerial.png) |
-
-### How it works
-
-| Step | What happens |
-|---|---|
-| **Export** ([exportMain.cpp](src/exportMain.cpp)) | `astroworldExport` samples `ParkScene` every frame (24 fps × 30 s). It writes every mesh once (`meshes.bin/json`), every object's 3×4 model matrix, tint and emission per frame (`frames.bin`), the per-frame lighting (sun, sky colours, point lights, exposure, dread sway: `lighting.json`) and the textures. |
-| **Build** ([buildAstroworld.py](tools/blender/buildAstroworld.py)) | Blender rebuilds the meshes with bulk `foreach_set` calls and shares each mesh between its instances, so 140 visitors use one torso mesh. It assigns Principled BSDF materials (gold vinyl with a clear coat, chrome, textured paving), a physical sky with a sunset and a starry night, searchlights as spot lights inside glowing haze, AgX colour, a bloom pass, motion blur and the camera fly-through. |
-| **Play** ([astroworldPlayer.py](tools/blender/astroworldPlayer.py)) | A frame-change handler applies the exported frame (with sub-frame interpolation for motion blur). It is **embedded in the `.blend`** as a registered text block, so the park also moves when the file is opened in Blender. |
-| **Sculpted head** ([assets/blender/head.blend](assets/blender/head.blend)) | The inflatable head, dreads and mouth tunnel were sculpted by hand in Blender, to the clearance constraints the visitors' walking path needs. The build swaps them into the existing objects, so they keep their material, glow and animation. The dreads get a procedural wind-sway shape key. |
-
-### Running it
-Blender 4.2+ is needed (developed on Blender 5.2, a Windows install driven from WSL):
-
-```bash
-tools/blender/render.sh scene                       # build the .blend (also copied to Documents\ASTROWORLD-Blender on Windows)
-tools/blender/render.sh stills 1,145,313,720        # quick preview frames -> output/blender/stills/
-tools/blender/render.sh still 313                   # one full-quality EEVEE frame
-tools/blender/render.sh cycles 313                  # one path-traced Cycles frame
-tools/blender/render.sh animation                   # all 720 frames -> output/astroworldBlender.mp4
-```
-
-`HEAD=none` uses our procedural head instead of the sculpt, and `HEAD_PARTS=dreads` uses only some parts of it.
-
-### A closed-circuit roller coaster
-The coaster used to be the 2D side profile lifted into 3D: the train rose out of the ground and vanished at the far end. It is now a **closed circuit** in the north-west corner of the park ([parkModels.cpp](src/park3d/parkModels.cpp)):
-- **The ride:** station → chain lift to 24 m → first drop into a climbing turnaround → camelback hills down the west side → a sweeping turn back east → brake run → station.
-- **Track shape:** 15 control points sampled as a **closed Catmull–Rom spline**, so the end joins the start smoothly.
-- **Train speed** ([parkScene.cpp](src/park3d/parkScene.cpp)), integrated along the track by arc length:
-  - fixed speeds in the station (2.5 m/s) and on the chain lift (4 m/s)
-  - after the crest, **energy conservation with rolling friction**: ½v² = ½v_c² + g(h_c − h) − μgs
-  - a brake run that caps the speed at √(v_station² + 2·a·d), so the train glides back into the station
-- **Seamless loop:** the train reaches ~21.5 m/s (77 km/h) at the bottom of the first drop, and one lap takes 30 s, exactly one animation loop.
-
-![The closed coaster circuit (OpenGL, aerial)](docs/screenshots/coasterCircuit.png)
-
-### Lessons learned
-- **Per-object modifiers are expensive:** a Subdivision modifier on each of ~500 visitors made every frame take 150 s, even at 64×36 pixels. Subdividing the *shared* meshes once brought a 720p frame down to ~16–34 s.
-- **No world-wide volume in EEVEE:** it dimmed the whole night scene to black. Local volumes (the searchlight cones, the mouth haze) give the same effect cheaply.
-- **Read data in one go:** Windows Blender reads WSL files over a network share (`\\wsl.localhost`), where memory-mapping `frames.bin` was slow. The same share is why Blender couldn't open a `.blend` stored there.
-
