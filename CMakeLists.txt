@@ -6,6 +6,7 @@
 #   astroworldWindow  CP2 live player for the software renderer (needs SDL2; skipped if not found)
 #   astroworldGl      CP3+ real-time 3D park in OpenGL 3.3 core (needs GLFW; skipped if not found)
 #   astroworldRay     final phase: CPU ray tracer / path tracer of the same 3D park (no dependencies)
+#   astroworldExport  side project: exports the 3D park and its animation for Blender (no dependencies)
 
 cmake_minimum_required(VERSION 3.16)
 project(ASTROWORLD LANGUAGES CXX)
