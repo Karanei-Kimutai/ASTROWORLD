@@ -41,6 +41,8 @@ parser.add_argument("--height", type=int, default=720)
 parser.add_argument("--samples", type=int, default=64)
 parser.add_argument("--output", default="")
 parser.add_argument("--save", default="")
+parser.add_argument("--head-file", default="", help="a sculpted head.blend (objects astroHead, astroDreads, astroMouthTunnel)")
+parser.add_argument("--head-parts", default="head,dreads,tunnel", help="which sculpted parts replace ours")
 args = parser.parse_args(argv)
 DATA = args.data
 
@@ -316,6 +318,76 @@ for index, entry in enumerate(OBJECTS["objects"]):
         ANIMATED.append((blender_object, index))
 
 ANIMATED_INDICES = np.array([index for _, index in ANIMATED], dtype=np.int64)
+
+# ---------------------------------------------------------------------------------------------
+# Optional sculpted head (made by hand in Blender, saved as head.blend). Each chosen part swaps
+# the MESH of our object, so the object keeps its name, material, glow and animation.
+# The sculpt is in Blender world space (z up, face toward -y), ours lives under the y-up root.
+# ---------------------------------------------------------------------------------------------
+SCULPTED_PARTS = {"head": ("astroHead", "head.000"), "dreads": ("astroDreads", "dreads.000"), "tunnel": ("astroMouthTunnel", "tunnel.000")}
+
+
+def fill_color_attribute(new_mesh, old_mesh):
+    """Our materials multiply by the "Col" vertex colour: give the sculpt the old part's mean colour."""
+    old = old_mesh.color_attributes.get("Col")
+    if old is None:
+        return
+    values = np.empty(len(old.data) * 4, dtype=np.float32)
+    old.data.foreach_get("color", values)
+    mean = values.reshape(-1, 4).mean(axis=0)
+    new = new_mesh.color_attributes.new("Col", old.data_type, old.domain)
+    new.data.foreach_set("color", np.tile(mean, len(new.data)).astype(np.float32))
+
+
+def add_sculpted_sway(blender_object):
+    """Wind sway for sculpted dreads: swing them about the front-back axis through the crown, tips most,
+    by 0.05 rad at key value 1 (the same reference bend our exporter uses for its own dreads)."""
+    mesh = blender_object.data
+    positions = np.empty(len(mesh.vertices) * 3, dtype=np.float32)
+    mesh.vertices.foreach_get("co", positions)
+    local = positions.reshape(-1, 3)
+    # In the root's y-up frame: x across, y up, z toward the face. Pivot at the crown.
+    top, bottom = float(local[:, 1].max()), float(local[:, 1].min())
+    weight = np.clip((top - local[:, 1]) / max(top - bottom, 1e-6), 0.0, 1.0)
+    angle = 0.05 * weight
+    pivot_y = top
+    dx, dy = local[:, 0], local[:, 1] - pivot_y
+    bent = local.copy()
+    bent[:, 0] = dx * np.cos(angle) - dy * np.sin(angle)
+    bent[:, 1] = dx * np.sin(angle) + dy * np.cos(angle) + pivot_y
+    blender_object.shape_key_add(name="Basis")
+    sway = blender_object.shape_key_add(name="Sway")
+    sway.data.foreach_set("co", bent.reshape(-1))
+    sway.slider_min, sway.slider_max = -2.0, 2.0
+
+
+if args.head_file and os.path.exists(args.head_file):
+    wanted = [part for part in args.head_parts.split(",") if part in SCULPTED_PARTS]
+    with bpy.data.libraries.load(args.head_file, link=False) as (source, loaded):
+        loaded.objects = [SCULPTED_PARTS[part][0] for part in wanted if SCULPTED_PARTS[part][0] in source.objects]
+    for part in wanted:
+        sculpt = bpy.data.objects.get(SCULPTED_PARTS[part][0])
+        target = bpy.data.objects.get(SCULPTED_PARTS[part][1])
+        if sculpt is None or target is None or sculpt.type != "MESH":
+            print("ASTROWORLD: sculpted %s not found, keeping ours" % part)
+            continue
+        new_mesh = sculpt.data.copy()
+        new_mesh.name = "sculpted_" + part
+        # Sculpt world space -> our object's local space (under the rotated root).
+        new_mesh.transform((root.matrix_basis @ target.matrix_basis).inverted() @ sculpt.matrix_world)
+        new_mesh.materials.clear()
+        new_mesh.materials.append(None)
+        fill_color_attribute(new_mesh, target.data)
+        material = target.material_slots[0].material
+        target.data = new_mesh
+        target.material_slots[0].link = "OBJECT"
+        target.material_slots[0].material = material
+        if part == "dreads":
+            for modifier in list(target.modifiers):  # the sculpt is already smooth
+                target.modifiers.remove(modifier)
+            add_sculpted_sway(target)
+        bpy.data.objects.remove(sculpt)
+        print("ASTROWORLD: using sculpted %s (%d faces) from %s" % (part, len(new_mesh.polygons), args.head_file))
 
 # Volumetric glow pouring out of the mouth (the album cover's golden haze).
 haze_mesh = bpy.data.meshes.new("mouthHaze")

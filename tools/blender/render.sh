@@ -39,13 +39,24 @@ toBlenderPath() {
 cmake --build "$repoRoot/build" --target astroworldExport >/dev/null
 "$repoRoot/build/astroworldExport" --fps 24 --seconds 30 --out "$dataDirectory"
 
+# A sculpted head (head.blend, made in Blender) replaces ours when it exists: by default the one in the
+# Windows copy folder. HEAD=/path/to/head.blend or HEAD=none to override; HEAD_PARTS=head,dreads,tunnel.
+headFile="${HEAD:-}"
+if [ -z "$headFile" ] && [[ "$blender" == *.exe ]]; then
+    windowsProfile="$(cd /mnt/c && cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')"
+    headFile="$(wslpath -u "$windowsProfile")/Documents/ASTROWORLD-Blender/head.blend"
+fi
+headArguments=()
+if [ "$headFile" != "none" ] && [ -f "$headFile" ]; then
+    headArguments=(--head-file "$(toBlenderPath "$headFile")" --head-parts "${HEAD_PARTS:-head,dreads,tunnel}")
+fi
 script="$(toBlenderPath "$repoRoot/tools/blender/buildAstroworld.py")"
 data="$(toBlenderPath "$dataDirectory")"
 blend="$(toBlenderPath "$dataDirectory/astroworld.blend")"
 
 case "$mode" in
     scene)
-        "$blender" -b -P "$script" -- --data "$data" --save "$blend"
+        "$blender" -b -P "$script" -- --data "$data" "${headArguments[@]}" --save "$blend"
         # Windows Blender can refuse to open a .blend from the \\wsl.localhost share ("Permission denied"),
         # so for a Windows install the scene and its data files (the player reads frames.bin next to the
         # .blend) are also copied to Documents\ASTROWORLD-Blender on the Windows drive.
@@ -61,21 +72,21 @@ case "$mode" in
         esac
         ;;
     still)
-        "$blender" -b -P "$script" -- --data "$data" --render still --frame "$frame" --output "$(toBlenderPath "$dataDirectory/still.png")"
+        "$blender" -b -P "$script" -- --data "$data" "${headArguments[@]}" --render still --frame "$frame" --output "$(toBlenderPath "$dataDirectory/still.png")"
         ;;
     stills)
         # Preview sheet: tools/blender/render.sh stills 1,145,241,313,433,553,649,720 [width height samples]
         mkdir -p "$dataDirectory/stills"
-        "$blender" -b -P "$script" -- --data "$data" --render stills --frames "$frame" \
+        "$blender" -b -P "$script" -- --data "$data" "${headArguments[@]}" --render stills --frames "$frame" \
             --width "${3:-640}" --height "${4:-360}" --samples "${5:-16}" --output "$(toBlenderPath "$dataDirectory/stills")"
         ;;
     cycles)
-        "$blender" -b -P "$script" -- --data "$data" --engine cycles --samples 128 --render still --frame "$frame" \
+        "$blender" -b -P "$script" -- --data "$data" "${headArguments[@]}" --engine cycles --samples 128 --render still --frame "$frame" \
             --output "$(toBlenderPath "$dataDirectory/still_cycles.png")"
         ;;
     animation)
         mkdir -p "$dataDirectory/frames"
-        "$blender" -b -P "$script" -- --data "$data" --render animation --output "$(toBlenderPath "$dataDirectory/frames")\\frame_"
+        "$blender" -b -P "$script" -- --data "$data" "${headArguments[@]}" --render animation --output "$(toBlenderPath "$dataDirectory/frames")\\frame_"
         ffmpeg -loglevel error -y -framerate 24 -i "$dataDirectory/frames/frame_%04d.png" -c:v libx264 -pix_fmt yuv420p -crf 18 \
             "$repoRoot/output/astroworldBlender.mp4"
         echo "  wrote  output/astroworldBlender.mp4"
