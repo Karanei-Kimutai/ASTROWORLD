@@ -39,13 +39,10 @@ toBlenderPath() {
 cmake --build "$repoRoot/build" --target astroworldExport >/dev/null
 "$repoRoot/build/astroworldExport" --fps 24 --seconds 30 --out "$dataDirectory"
 
-# A sculpted head (head.blend, made in Blender) replaces ours when it exists: by default the one in the
-# Windows copy folder. HEAD=/path/to/head.blend or HEAD=none to override; HEAD_PARTS=head,dreads,tunnel.
-headFile="${HEAD:-}"
-if [ -z "$headFile" ] && [[ "$blender" == *.exe ]]; then
-    windowsProfile="$(cd /mnt/c && cmd.exe /c "echo %USERPROFILE%" 2>/dev/null | tr -d '\r')"
-    headFile="$(wslpath -u "$windowsProfile")/Documents/ASTROWORLD-Blender/head.blend"
-fi
+# The hand-sculpted head (assets/blender/head.blend, made in Blender) replaces our generated one.
+# HEAD=/path/to/head.blend (e.g. a copy you are still sculpting) or HEAD=none to override;
+# HEAD_PARTS=head,dreads,tunnel picks which sculpted parts to use.
+headFile="${HEAD:-$repoRoot/assets/blender/head.blend}"
 headArguments=()
 if [ "$headFile" != "none" ] && [ -f "$headFile" ]; then
     headArguments=(--head-file "$(toBlenderPath "$headFile")" --head-parts "${HEAD_PARTS:-head,dreads,tunnel}")
