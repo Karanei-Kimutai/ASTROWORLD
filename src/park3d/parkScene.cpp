@@ -66,8 +66,8 @@ const Placement stallPlacements[] = {
 };
 const Vec3 treePositions[] = {
     {-30, 0, 22}, {30, 0, 24}, {-38, 0, 9}, {38, 0, 9}, {-44, 0, 32}, {44, 0, 34}, {-26, 0, 38}, {27, 0, 40},
-    {-40, 0, -28}, {-46, 0, -62}, {50, 0, -42}, {52, 0, -70}, {14, 0, -76}, {-16, 0, -86}, {-4, 0, -58}, {10, 0, -62},
-    {-34, 0, -82}, {18, 0, -100}, {44, 0, -100}, {-50, 0, -12}, {12, 0, -24}, {-10, 0, -44},
+    {-40, 0, -28}, {-41, 0, -62}, {50, 0, -42}, {52, 0, -70}, {14, 0, -76}, {-16, 0, -86}, {-4, 0, -58}, {10, 0, -62},
+    {-34, 0, -82}, {18, 0, -100}, {44, 0, -100}, {-62, 0, -4}, {12, 0, -24}, {-10, 0, -44},
 };
 
 /** @brief Control points of the visitors' walking loop (y = 0): plaza -> mouth -> park -> exit gate -> plaza. */
@@ -246,10 +246,55 @@ ParkScene::ParkScene() {
     for (std::size_t index = 1; index < coasterPath.size(); ++index) {
         coasterCumulativeLength[index] = coasterCumulativeLength[index - 1] + (coasterPath[index] - coasterPath[index - 1]).length();
     }
+
+    // ---- Train timing around the circuit: dt = ds / v for every track sample ----------------
+    // Station and chain lift run at fixed speeds; after the crest the speed comes from ENERGY
+    // CONSERVATION with a little rolling friction,
+    //     1/2 v^2 = 1/2 v_crest^2 + g (h_crest - h) - mu g s      (s = distance since the crest),
+    // and the brake run caps it so the train glides back into the station at walking pace:
+    //     v <= sqrt(v_station^2 + 2 a_brake d)                   (d = distance left to the station).
+    // The lap is then rescaled to exactly one animation loop, so the video loops seamlessly.
+    const std::size_t sampleCount = coasterPath.size();
+    const std::size_t liftStart = 2 * 24;  // control point 2 = foot of the chain lift (24 samples per segment)
+    std::size_t crest = liftStart;
+    for (std::size_t index = liftStart; index < sampleCount; ++index) {
+        if (coasterPath[index].y > coasterPath[crest].y) crest = index;
+    }
+    const double stationSpeed = 2.5, liftSpeed = 4.0, crestSpeed = 3.5;  // m/s
+    const double rollingFriction = 0.015, brakeDeceleration = 4.0;      // mu, m/s^2
+    const double lapLength = coasterCumulativeLength.back();
+    coasterLapTime.assign(sampleCount, 0.0);
+    for (std::size_t index = 1; index < sampleCount; ++index) {
+        const double segmentLength = coasterCumulativeLength[index] - coasterCumulativeLength[index - 1];
+        const double middle = (coasterCumulativeLength[index] + coasterCumulativeLength[index - 1]) * 0.5;
+        double speed = stationSpeed;
+        if (index > liftStart && index <= crest) {
+            speed = liftSpeed;
+        } else if (index > crest) {
+            const double height = (coasterPath[index].y + coasterPath[index - 1].y) * 0.5;
+            const double sinceCrest = middle - coasterCumulativeLength[crest];
+            const double energy = crestSpeed * crestSpeed + 2.0 * gravity * (coasterPath[crest].y - height) - 2.0 * rollingFriction * gravity * sinceCrest;
+            const double brakeCap = stationSpeed * stationSpeed + 2.0 * brakeDeceleration * (lapLength - middle);
+            speed = std::sqrt(std::max(std::min(energy, brakeCap), stationSpeed * stationSpeed));
+        }
+        coasterLapTime[index] = coasterLapTime[index - 1] + segmentLength / speed;
+    }
+    const double timeScale = animationLoopSeconds / coasterLapTime.back();
+    for (double& seconds : coasterLapTime) seconds *= timeScale;
+}
+
+double ParkScene::coasterLeadDistanceAt(double timeSeconds) const {
+    // Invert the time table: which distance has the train covered this far into the lap?
+    const double lapSeconds = wrapTime(timeSeconds, coasterLapTime.back());
+    const auto upper = std::upper_bound(coasterLapTime.begin(), coasterLapTime.end(), lapSeconds);
+    const std::size_t index = std::clamp<std::size_t>(static_cast<std::size_t>(upper - coasterLapTime.begin()), 1, coasterLapTime.size() - 1);
+    const double span = coasterLapTime[index] - coasterLapTime[index - 1];
+    const double t = span > 1e-9 ? (lapSeconds - coasterLapTime[index - 1]) / span : 0.0;
+    return coasterCumulativeLength[index - 1] + (coasterCumulativeLength[index] - coasterCumulativeLength[index - 1]) * t;
 }
 
 void ParkScene::coasterFrameAt(double distance, Vec3& position, Vec3& tangent) const {
-    distance = std::clamp(distance, 0.0, coasterCumulativeLength.back());
+    distance = wrapTime(distance, coasterCumulativeLength.back());  // closed circuit: wrap around
     const auto upper = std::lower_bound(coasterCumulativeLength.begin(), coasterCumulativeLength.end(), distance);
     const std::size_t index = std::clamp<std::size_t>(static_cast<std::size_t>(upper - coasterCumulativeLength.begin()), 1, coasterPath.size() - 1);
     const double segment = coasterCumulativeLength[index] - coasterCumulativeLength[index - 1];
@@ -270,7 +315,7 @@ void ParkScene::routeFrameAt(double distance, Vec3& position, Vec3& tangent) con
 }
 
 bool ParkScene::coasterRideView(double timeSeconds, Vec3& eye, Vec3& forward, Vec3& up) const {
-    const double distance = coasterTrainFractionAt(timeSeconds) * coasterCumulativeLength.back();
+    const double distance = coasterLeadDistanceAt(timeSeconds);
     Vec3 position, tangent;
     coasterFrameAt(distance, position, tangent);
     Vec3 aheadPosition, aheadTangent;
@@ -279,7 +324,7 @@ bool ParkScene::coasterRideView(double timeSeconds, Vec3& eye, Vec3& forward, Ve
     up = crossProduct(lateral, tangent).normalized();
     eye = position + tangent * 1.0 + up * 1.7;
     forward = (aheadPosition + up * 1.4 - eye).normalized();
-    return distance > 0.0;
+    return true;  // the train is always on the closed circuit
 }
 
 void ParkScene::addRider(ParkFrame& frame, const Matrix4& seat, int seed) const {
@@ -357,10 +402,9 @@ void ParkScene::addClassicRides(ParkFrame& frame, double time, double night) con
     // ---- Roller coaster ------------------------------------------------------------------
     add(MeshId::coasterTrack, Matrix4::identity(), makeMaterial(white, 0.6, 0.35));
     add(MeshId::coasterTruss, Matrix4::identity(), makeMaterial(white, 0.6, 0.4));
-    const double leadDistance = coasterTrainFractionAt(time) * coasterCumulativeLength.back();
+    const double leadDistance = coasterLeadDistanceAt(time);
     for (int car = 0; car < 4; ++car) {
-        const double distance = leadDistance - car * 2.2;
-        if (distance < 0.0) continue;
+        const double distance = leadDistance - car * 2.2;  // wraps round the closed circuit
         Vec3 position, forward;
         coasterFrameAt(distance, position, forward);
         const Vec3 lateral = crossProduct(forward, {0, 1, 0}).normalized();

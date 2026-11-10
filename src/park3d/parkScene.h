@@ -110,7 +110,7 @@ public:
 
     /**
      * @brief First-person view from the front car of the coaster at time t.
-     * @return false if the train is not on the track at that moment.
+     * @return always true: the train is always somewhere on the closed circuit.
      */
     bool coasterRideView(double timeSeconds, Vec3& eye, Vec3& forward, Vec3& up) const;
 
@@ -123,13 +123,17 @@ private:
     void addLighting(ParkFrame& frame, double time, double night) const;
     void addRider(ParkFrame& frame, const Matrix4& seat, int seed) const;
 
+    /** @brief Point and direction on the (closed) coaster circuit at an arc-length distance (wraps). */
     void coasterFrameAt(double distance, Vec3& position, Vec3& tangent) const;
+    /** @brief Distance of the train's front car around the circuit at time t (one lap per loop). */
+    double coasterLeadDistanceAt(double timeSeconds) const;
     /** @brief Point and direction on the visitors' walking loop at an arc-length distance. */
     void routeFrameAt(double distance, Vec3& position, Vec3& tangent) const;
 
     std::array<MeshData, meshIdCount> meshes;
     std::vector<Vec3> coasterPath;
     std::vector<double> coasterCumulativeLength;
+    std::vector<double> coasterLapTime;  // seconds into the lap at which the train reaches each sample
     std::vector<Vec3> walkingRoute;
     std::vector<double> routeCumulativeLength;
     std::vector<Vec3> lampPositions;

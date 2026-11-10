@@ -93,18 +93,30 @@ MeshData buildGondola() {
 // ---------------------------------------------------------------------------
 
 std::vector<Vec3> buildCoasterTrackPath() {
-    // The SAME side profile the 2D renderer uses, mapped into the world:
-    // pixel x -> world x, pixel height above the ground line -> world y, and the
-    // track recedes in z as it runs right.
-    std::vector<Vec3> controlPoints;
-    for (const Vec2& point : coasterProfilePoints()) {
-        const double along = (point.x - 830.0) / 470.0;  // 0 at the start of the profile, 1 at the end
-        const double x = -40.0 - along * 40.0;
-        const double height = (coasterProfileGroundY - point.y) / 265.0 * 22.0 + 0.4;
-        const double z = -18.0 - along * 80.0;
-        controlPoints.push_back({x, height, z});
-    }
-    return sampleCatmullRomSpline3D(controlPoints, 24, false);
+    // A CLOSED circuit in the park's north-west corner (x -50..-88, z -14..-104), so the train goes
+    // round and round instead of rising out of the ground and vanishing. Walking the control points
+    // in ride order: station -> chain lift -> crest -> first drop into a turnaround at the far end
+    // -> camelback hills down the west side -> sweeping turn back east -> brakes -> station.
+    // The first and last points join smoothly because the Catmull-Rom spline is sampled CLOSED.
+    // ParkScene times the train along it from these heights (energy conservation after the crest).
+    const std::vector<Vec3> controlPoints = {
+        {-50.0, 1.2, -20.0},   // station (loading platform)
+        {-50.0, 1.2, -30.0},   // station exit
+        {-50.0, 3.0, -39.0},   // foot of the chain lift
+        {-50.0, 21.0, -64.0},  // chain lift (about 35 degrees)
+        {-51.0, 22.5, -71.0},  // crest - the highest point of the ride
+        {-56.0, 3.0, -86.0},   // first drop, already turning west
+        {-67.0, 2.5, -100.0},  // bottom of the drop at the far end
+        {-80.0, 10.0, -101.0}, // climbing turnaround
+        {-88.0, 13.0, -89.0},  // top of the turnaround
+        {-88.0, 4.0, -73.0},   // second drop down the west side
+        {-87.0, 11.0, -58.0},  // camelback hill (airtime)
+        {-86.0, 3.0, -44.0},   // dip
+        {-84.0, 7.5, -31.0},   // small hill
+        {-76.0, 2.0, -16.0},   // sweeping turn back east
+        {-61.0, 1.4, -12.0},   // brake run into the station
+    };
+    return sampleCatmullRomSpline3D(controlPoints, 24, true);
 }
 
 namespace {
