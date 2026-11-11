@@ -2,22 +2,41 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-The same park is drawn by **three renderers that we wrote**:
-- a 2D software rasterizer (CP1/CP2)
-- a real-time OpenGL 3D renderer (CP3, prototype)
-- a CPU ray tracer and path tracer (final)
+> **You are on branch `final`: Final project – ray tracing and path tracing (Checkpoint 4).** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
 
-![ASTROWORLD, path traced - final](docs/screenshots/pathTracedDay.png)
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built, including programs this branch doesn't have
+> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
 
-*Final: the 3D park path traced with global illumination, 128 samples per pixel. Below: the real-time OpenGL version, then the CP1/CP2 software renderer's version of the same scene.*
+## This stage: Final project – ray tracing and path tracing (Checkpoint 4)
 
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+- A CPU **Whitted ray tracer** (hard shadows, mirror reflections) and a **path tracer** (global illumination) of the same 3D park, with a BVH, Möller–Trumbore intersection and stratified anti-aliasing.
+- A mirror-ball sculpture and shared textures, plus the final report: [Checkpoint 4](#checkpoint-4--final-demonstration).
 
-![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
+**Run it** (after building):
 
-| Day (album cover) | Night (starfield artwork) |
+```bash
+./build/astroworldRay               # Whitted ray tracing, day -> output/ (~7 s)
+./build/astroworldRay --time 18     # ...at night
+./build/astroworldRay --mode path   # path tracing (slower)
+```
+
+**What you should see:**
+
+| Path traced, day | Path traced, night |
 |---|---|
-| ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
+| ![Path traced day](docs/screenshots/pathTracedDay.png) | ![Path traced night](docs/screenshots/pathTracedNight.png) |
+| ![Whitted day](docs/screenshots/rayTracedDay.png) | ![Whitted night](docs/screenshots/rayTracedNight.png) |
+
+*Top: path traced (global illumination). Bottom: Whitted ray traced.*
 
 ---
 
@@ -44,7 +63,17 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
-| `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
+| **`final` ← you are here** | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
+
+### Earlier stages at a glance
+
+**Prototype and Checkpoint 3:** the same park in real-time OpenGL.
+
+![OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+**Checkpoints 1 and 2:** the 2D software renderer.
+
+![CP2 animation](docs/screenshots/animationPreview.gif)
 
 ---
 
