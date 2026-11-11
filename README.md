@@ -2,26 +2,39 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-The `photorealism` branch turns the 3D park into a photoreal, living theme park: the inflatable gold head is the entrance gate, crowds walk through its mouth into a park full of rides, and everything is lit with physically based shading, shadows and HDR. See [the photorealism section](#photorealism--a-living-photoreal-park).
+> **You are on branch `photorealism`: Photorealism – a living, photoreal park (side project).** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
+
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built, including programs this branch doesn't have
+> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
+
+## This stage: Photorealism – a living, photoreal park (side project)
+
+- The real-time park made photoreal: **PBR** (Cook–Torrance), **shadow mapping**, **HDR** with ACES tone mapping, **bloom** and GPU instancing.
+- The inflatable gold head is the entrance, and ~140 visitors walk *through* its mouth into a much bigger park with new rides (wave swinger, pirate ship, teacups, bumper cars). See [the photorealism section](#photorealism--a-living-photoreal-park).
+
+**Run it** (after building):
+
+```bash
+./build/astroworldGl               # C cycles viewpoints (try THE GATE), X shadows, B bloom, H help
+```
+
+**What you should see:**
 
 ![The photoreal park at night](docs/screenshots/photoGateNight.png)
 
-The same park is drawn by **three renderers that we wrote**:
-- a 2D software rasterizer (CP1/CP2)
-- a real-time OpenGL 3D renderer (CP3, prototype)
-- a CPU ray tracer and path tracer (final)
-
-![ASTROWORLD, path traced - final](docs/screenshots/pathTracedDay.png)
-
-*Final: the 3D park path traced with global illumination, 128 samples per pixel. Below: the real-time OpenGL version, then the CP1/CP2 software renderer's version of the same scene.*
-
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
-
-![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
-
-| Day (album cover) | Night (starfield artwork) |
+| Day | Night |
 |---|---|
-| ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
+| ![Day](docs/screenshots/photoDay.png) | ![Night](docs/screenshots/photoNight.png) |
+| ![The gate](docs/screenshots/photoGate.png) | ![Inside the park](docs/screenshots/photoInside.png) |
 
 ---
 
@@ -48,8 +61,20 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
-| `photorealism` | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
+| **`photorealism` ← you are here** | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
 | `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
+
+### Earlier stages at a glance
+
+**Final (Checkpoint 4):** the path-traced park.
+
+![Path traced](docs/screenshots/pathTracedDay.png)
+
+**Checkpoint 3 / prototype:** real-time OpenGL. **Checkpoints 1–2:** the 2D software renderer.
+
+![OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+![CP2 animation](docs/screenshots/animationPreview.gif)
 
 ---
 
