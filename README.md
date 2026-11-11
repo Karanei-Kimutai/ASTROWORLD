@@ -64,17 +64,45 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | **`photorealism` ← you are here** | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
 | `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Final (Checkpoint 4):** the path-traced park.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-![Path traced](docs/screenshots/pathTracedDay.png)
+#### 1. Final project – ray tracing and path tracing (Checkpoint 4)
 
-**Checkpoint 3 / prototype:** real-time OpenGL. **Checkpoints 1–2:** the 2D software renderer.
+*Branch `final` (graded).* A CPU Whitted ray tracer (hard shadows, mirror reflections) and a path tracer (global illumination) of the same 3D park, with a BVH and anti-aliasing, plus the final report.
 
-![OpenGL](docs/screenshots/animationPreviewGl.gif)
+![The park path traced](docs/screenshots/pathTracedDay.png)
 
-![CP2 animation](docs/screenshots/animationPreview.gif)
+#### 2. Prototype – all components combined
+
+*Branch `prototype` (graded).* Everything in one interactive OpenGL app: switchable flat, Gouraud and Phong shading, every projection type (1-, 2- and 3-point perspective, isometric, oblique, multiview), textures with mipmapping and a coaster ride camera.
+
+![Flat, Gouraud and Phong shading](docs/screenshots/shadingModes.png)
+
+#### 3. Checkpoint 3 – OpenGL integration
+
+*Branch `checkpoint-3` (graded).* The park rebuilt in real-time 3D with OpenGL 3.3 core: meshes, GLSL shaders, Phong lighting, a depth buffer, MSAA and an orbit camera, driven by our own matrices.
+
+![The 3D park in OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+#### 4. Checkpoint 2 – Transformation and animation
+
+*Branch `checkpoint-2` (graded).* Homogeneous 2D and 3D transformations bring the 2D park to life: turning rides, a physics-timed coaster, the crowd walking in and a day-to-night cycle, rendered as a video.
+
+![The animated 2D park](docs/screenshots/animationPreview.gif)
+
+#### 5. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 6. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
