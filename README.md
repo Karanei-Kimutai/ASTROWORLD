@@ -65,17 +65,27 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 *Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Checkpoint 2:** the 2D software renderer, animated.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-![CP2 animation](docs/screenshots/animationPreview.gif)
+#### 1. Checkpoint 2 – Transformation and animation
 
-**Checkpoint 1:** the still park drawn with the course algorithms.
+*Branch `checkpoint-2` (graded).* Homogeneous 2D and 3D transformations bring the 2D park to life: turning rides, a physics-timed coaster, the crowd walking in and a day-to-night cycle, rendered as a video.
 
-| Day | Night |
-|---|---|
-| ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) |
+![The animated 2D park](docs/screenshots/animationPreview.gif)
+
+#### 2. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 3. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
