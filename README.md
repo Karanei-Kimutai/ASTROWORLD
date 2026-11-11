@@ -2,15 +2,39 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+> **You are on branch `checkpoint-3`: Checkpoint 3 – OpenGL integration.** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
 
-*Checkpoint 3: the park in real-time 3D with OpenGL. Below: the CP1/CP2 software renderer's version of the same scene.*
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built, including programs this branch doesn't have
+> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
 
-![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
+## This stage: Checkpoint 3 – OpenGL integration
 
-| Day (album cover) | Night (starfield artwork) |
+- The park rebuilt in real-time **3D with OpenGL 3.3 core**: meshes, GLSL shaders, Phong lighting, depth buffer, MSAA and an orbit camera.
+- It uses GLFW for the window and our own GL function loader. Our CP2 matrices drive every transform.
+
+**Run it** (after building):
+
+```bash
+./build/astroworldGl               # the 3D park (needs libglfw3-dev); C cycles viewpoints, H shows help
+```
+
+**What you should see:**
+
+![The 3D park in OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+| Day | Night |
 |---|---|
-| ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
+| ![OpenGL day](docs/screenshots/glDay.png) | ![OpenGL night](docs/screenshots/glNight.png) |
+| ![Aerial](docs/screenshots/glAerial.png) | ![Ferris wheel at night](docs/screenshots/glFerrisNight.png) |
 
 ---
 
@@ -35,9 +59,23 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
 | `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
-| `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
+| **`checkpoint-3` ← you are here** | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
 | `prototype` | Prototype | All components combined into one interactive park. |
 | `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
+
+*Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
+
+### Earlier stages at a glance
+
+**Checkpoint 2:** the 2D software renderer, animated.
+
+![CP2 animation](docs/screenshots/animationPreview.gif)
+
+**Checkpoint 1:** the still park drawn with the course algorithms.
+
+| Day | Night |
+|---|---|
+| ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) |
 
 ---
 
