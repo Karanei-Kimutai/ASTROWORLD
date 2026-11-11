@@ -104,30 +104,57 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 `main` holds the latest work (it is fast-forwarded to the newest branch); the checkpoint branches stay as they were submitted. The branch chain is linear: `checkpoint-1` → `checkpoint-1-window` → `checkpoint-2` → `checkpoint-3` → `prototype` → `final` → `photorealism` → `blender`.
 
-### The park through each stage, newest first
+### What each stage looks like, newest first
 
-**Blender (side project):** the image at the top of this README, rendered from our engine's export. See [Latest](#latest--the-park-rendered-in-blender).
+Every stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-**Photorealism (side project):** the real-time OpenGL park with PBR, shadows and HDR. See [the photorealism section](#photorealism--a-living-photoreal-park).
+#### 1. Blender – the park rendered in Blender
+
+*Branch `blender` (side project, the latest work).* Our engine exports the 3D park and its animation, and Blender renders them: a hand-sculpted inflatable head, a physical sky that sets into a starry night, searchlight haze, depth of field, motion blur and a camera fly-through. The roller coaster runs a closed circuit.
+
+![The park rendered in Blender](docs/screenshots/blenderGate.png)
+
+#### 2. Photorealism – a living, photoreal park
+
+*Branch `photorealism` (side project).* The real-time OpenGL park made photoreal: physically based (Cook–Torrance) materials, shadow mapping, HDR with ACES tone mapping, bloom and GPU instancing. The inflatable gold head is the entrance, and ~140 visitors walk through its mouth into a bigger park with new rides.
 
 ![The photoreal park at night](docs/screenshots/photoGateNight.png)
 
-**The graded checkpoints:** the same park is drawn by **three renderers that we wrote**:
-- a 2D software rasterizer (CP1/CP2)
-- a real-time OpenGL 3D renderer (CP3, prototype)
-- a CPU ray tracer and path tracer (final)
+#### 3. Final project – ray tracing and path tracing (Checkpoint 4)
 
-![ASTROWORLD, path traced - final](docs/screenshots/pathTracedDay.png)
+*Branch `final` (graded).* A CPU Whitted ray tracer (hard shadows, mirror reflections) and a path tracer (global illumination) of the same 3D park, with a BVH and anti-aliasing, plus the final report.
 
-*Final: the 3D park path traced with global illumination, 128 samples per pixel. Below: the real-time OpenGL version, then the CP1/CP2 software renderer's version of the same scene.*
+![The park path traced](docs/screenshots/pathTracedDay.png)
 
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+#### 4. Prototype – all components combined
 
-![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
+*Branch `prototype` (graded).* Everything in one interactive OpenGL app: switchable flat, Gouraud and Phong shading, every projection type (1-, 2- and 3-point perspective, isometric, oblique, multiview), textures with mipmapping and a coaster ride camera.
 
-| Day (album cover) | Night (starfield artwork) |
-|---|---|
-| ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
+![Flat, Gouraud and Phong shading](docs/screenshots/shadingModes.png)
+
+#### 5. Checkpoint 3 – OpenGL integration
+
+*Branch `checkpoint-3` (graded).* The park rebuilt in real-time 3D with OpenGL 3.3 core: meshes, GLSL shaders, Phong lighting, a depth buffer, MSAA and an orbit camera, driven by our own matrices.
+
+![The 3D park in OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+#### 6. Checkpoint 2 – Transformation and animation
+
+*Branch `checkpoint-2` (graded).* Homogeneous 2D and 3D transformations bring the 2D park to life: turning rides, a physics-timed coaster, the crowd walking in and a day-to-night cycle, rendered as a video.
+
+![The animated 2D park](docs/screenshots/animationPreview.gif)
+
+#### 7. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 8. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
