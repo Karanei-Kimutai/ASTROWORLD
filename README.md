@@ -63,15 +63,33 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 *Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Checkpoint 3:** the park in real-time OpenGL.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-![CP3 OpenGL](docs/screenshots/animationPreviewGl.gif)
+#### 1. Checkpoint 3 – OpenGL integration
 
-**Checkpoints 1 and 2:** the 2D software renderer.
+*Branch `checkpoint-3` (graded).* The park rebuilt in real-time 3D with OpenGL 3.3 core: meshes, GLSL shaders, Phong lighting, a depth buffer, MSAA and an orbit camera, driven by our own matrices.
 
-![CP2 animation](docs/screenshots/animationPreview.gif)
+![The 3D park in OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+#### 2. Checkpoint 2 – Transformation and animation
+
+*Branch `checkpoint-2` (graded).* Homogeneous 2D and 3D transformations bring the 2D park to life: turning rides, a physics-timed coaster, the crowd walking in and a day-to-night cycle, rendered as a video.
+
+![The animated 2D park](docs/screenshots/animationPreview.gif)
+
+#### 3. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 4. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
