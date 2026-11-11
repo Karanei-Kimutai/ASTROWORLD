@@ -65,15 +65,39 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
 | **`final` ← you are here** | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Prototype and Checkpoint 3:** the same park in real-time OpenGL.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-![OpenGL](docs/screenshots/animationPreviewGl.gif)
+#### 1. Prototype – all components combined
 
-**Checkpoints 1 and 2:** the 2D software renderer.
+*Branch `prototype` (graded).* Everything in one interactive OpenGL app: switchable flat, Gouraud and Phong shading, every projection type (1-, 2- and 3-point perspective, isometric, oblique, multiview), textures with mipmapping and a coaster ride camera.
 
-![CP2 animation](docs/screenshots/animationPreview.gif)
+![Flat, Gouraud and Phong shading](docs/screenshots/shadingModes.png)
+
+#### 2. Checkpoint 3 – OpenGL integration
+
+*Branch `checkpoint-3` (graded).* The park rebuilt in real-time 3D with OpenGL 3.3 core: meshes, GLSL shaders, Phong lighting, a depth buffer, MSAA and an orbit camera, driven by our own matrices.
+
+![The 3D park in OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+#### 3. Checkpoint 2 – Transformation and animation
+
+*Branch `checkpoint-2` (graded).* Homogeneous 2D and 3D transformations bring the 2D park to life: turning rides, a physics-timed coaster, the crowd walking in and a day-to-night cycle, rendered as a video.
+
+![The animated 2D park](docs/screenshots/animationPreview.gif)
+
+#### 4. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 5. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
