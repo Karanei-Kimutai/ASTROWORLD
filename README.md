@@ -65,11 +65,15 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 *Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Checkpoint 1** (branch `checkpoint-1`): the same images, written as PPM files only.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-![Algorithm showcase - CP1](docs/screenshots/algorithmShowcase.png)
+#### 1. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
