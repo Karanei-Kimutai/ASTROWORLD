@@ -2,15 +2,37 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-![ASTROWORLD in OpenGL - Checkpoint 3](docs/screenshots/animationPreviewGl.gif)
+> **You are on branch `prototype`: Prototype – all components combined.** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
 
-*Checkpoint 3: the park in real-time 3D with OpenGL. Below: the CP1/CP2 software renderer's version of the same scene.*
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built, including programs this branch doesn't have
+> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
 
-![ASTROWORLD animation preview - Checkpoint 2](docs/screenshots/animationPreview.gif)
+## This stage: Prototype – all components combined
 
-| Day (album cover) | Night (starfield artwork) |
+- Everything in one interactive app, with a renderer-independent scene description.
+- Switchable **flat / Gouraud / Phong** shading, every **projection** type (perspective with 1-, 2- and 3-point views, isometric, oblique cavalier and cabinet, multiview), a mipmapped ground texture, searchlights, and a first-person **coaster ride** camera.
+
+**Run it** (after building):
+
+```bash
+./build/astroworldGl               # C: viewpoints  V: projections  G: shading  R: ride the coaster  H: help
+```
+
+**What you should see:**
+
+| Shading: flat, Gouraud, Phong | Projections |
 |---|---|
-| ![ASTROWORLD by day](docs/screenshots/astroworldDay.png) | ![ASTROWORLD by night](docs/screenshots/astroworldNight.png) |
+| ![Shading modes](docs/screenshots/shadingModes.png) | ![Projections](docs/screenshots/projections.png) |
+| ![1-, 2- and 3-point perspective](docs/screenshots/perspectivePoints.png) | ![Coaster ride](docs/screenshots/coasterRide.png) |
 
 ---
 
@@ -36,8 +58,20 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | The park rebuilt in real-time 3D with OpenGL 3.3 core (GLFW + our own function loader): meshes, shaders, lighting, depth buffer, MSAA, orbit camera. |
-| `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
+| **`prototype` ← you are here** | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
 | `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
+
+*Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
+
+### Earlier stages at a glance
+
+**Checkpoint 3:** the park in real-time OpenGL.
+
+![CP3 OpenGL](docs/screenshots/animationPreviewGl.gif)
+
+**Checkpoints 1 and 2:** the 2D software renderer.
+
+![CP2 animation](docs/screenshots/animationPreview.gif)
 
 ---
 
