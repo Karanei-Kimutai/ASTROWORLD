@@ -2,6 +2,19 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant gold head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
+> **You are on branch `blender` (and `main`, which points to the same commit): the latest work.** Each earlier stage has its own branch with a README describing that stage (see [the journey](#the-journey--roadmap-and-branches)).
+
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built. On an older branch that means programs from a
+> later stage (or missing ones), so what you run is not what that stage produced. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+
 **Latest:** the park rendered in **Blender**. Our engine exports the scene and animation, and Blender renders them with a hand-sculpted inflatable head, a physical sky that sets into a starry night, searchlight haze and a camera fly-through. The roller coaster now runs a closed circuit. See [the latest work](#latest--the-park-rendered-in-blender), then [the journey](#the-journey--roadmap-and-branches) from pure C++ primitives to here.
 
 ![ASTROWORLD rendered in Blender - arriving at the gate](docs/screenshots/blenderGate.png)
@@ -87,7 +100,7 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | `prototype` | **Prototype** | Everything combined in one interactive app: a renderer-independent scene description, switchable flat/Gouraud/Phong shading, every projection type, mipmapped ground texture, searchlights, a coaster ride camera. |
 | `final` | **Final project** | A CPU ray tracer (Whitted) and path tracer (global illumination) of the same 3D scene, a mirror-ball sculpture, shared textures, and the final report (Checkpoint 4). |
 | `photorealism` | **Beyond the brief** | Photorealistic rendering (PBR, shadow mapping, HDR, bloom, tone mapping, instancing), an inflatable head with a walk-through mouth, and a much bigger park with more rides and ~140 visitors. |
-| `blender` | **Beyond the brief** | The park exported from our engine and rendered in Blender (EEVEE/Cycles): a hand-sculpted inflatable head, physical sky with a real sunset, searchlight haze, camera fly-through. Also a closed-circuit roller coaster. |
+| **`blender` ← you are here** | **Beyond the brief** | The park exported from our engine and rendered in Blender (EEVEE/Cycles): a hand-sculpted inflatable head, physical sky with a real sunset, searchlight haze, camera fly-through. Also a closed-circuit roller coaster. |
 
 `main` holds the latest work (it is fast-forwarded to the newest branch); the checkpoint branches stay as they were submitted. The branch chain is linear: `checkpoint-1` → `checkpoint-1-window` → `checkpoint-2` → `checkpoint-3` → `prototype` → `final` → `photorealism` → `blender`.
 
