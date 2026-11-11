@@ -67,13 +67,21 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 
 *Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
 
-### Earlier stages at a glance
+### Earlier stages, newest first
 
-**Checkpoint 1** (branches `checkpoint-1`, `checkpoint-1-window`): the still park and the algorithm panels, as PPM images and in a live window.
+Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
 
-| Day | Night | Window viewer |
-|---|---|---|
-| ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) | ![Window](docs/screenshots/windowViewer.png) |
+#### 1. Checkpoint 1, windowed variant
+
+*Branch `checkpoint-1-window` (graded).* The Checkpoint 1 renderer shown live in a window through SDL2. SDL2 only displays the image; our code still draws every pixel.
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+#### 2. Checkpoint 1 – Technical foundation
+
+*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+
+![The still park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
