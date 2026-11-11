@@ -2,8 +2,39 @@
 
 An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
 
-![ASTROWORLD by day - Checkpoint 1](docs/screenshots/astroworldDay.png)
-![ASTROWORLD by night - Checkpoint 1](docs/screenshots/astroworldNight.png)
+> **You are on branch `checkpoint-1-window`: Checkpoint 1, windowed variant.** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
+
+> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
+> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
+> programs and images from the last branch you built, including programs this branch doesn't have
+> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
+>
+> ```bash
+> rm -rf build && cmake -B build && cmake --build build -j
+> ```
+>
+> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
+> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
+
+## This stage: Checkpoint 1, windowed variant
+
+- The same Checkpoint 1 renderer, also shown live in a window through SDL2 (a basic windowing library). SDL2 is only used for the final display stage; every pixel is still drawn by our code.
+- Keys switch between the day and night scenes, the 8-bit versions and the showcases.
+
+**Run it** (after building):
+
+```bash
+./build/astroworld                 # writes the PPM images into output/
+./build/astroworldWindow           # shows them live in a window (needs libsdl2-dev)
+```
+
+**What you should see:**
+
+![The live window viewer](docs/screenshots/windowViewer.png)
+
+| Day | Night |
+|---|---|
+| ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) |
 
 ---
 
@@ -26,11 +57,19 @@ Each checkpoint has its own branch, created from the previous one, so every stag
 | Branch | Stage | Focus |
 |---|---|---|
 | `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
-| `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
+| **`checkpoint-1-window` ← you are here** | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
 | `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
 | `checkpoint-3` | **CP3 – OpenGL integration** | Components ported to OpenGL (GLFW + GLAD); real-time camera and perspective projection. |
 | `prototype` | Prototype | All components combined into one interactive park. |
 | `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
+
+*Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
+
+### Earlier stages at a glance
+
+**Checkpoint 1** (branch `checkpoint-1`): the same images, written as PPM files only.
+
+![Algorithm showcase - CP1](docs/screenshots/algorithmShowcase.png)
 
 ---
 
