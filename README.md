@@ -42,6 +42,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 
 *Branch `blender` (also on `main`), built on `photorealism`. A side project beyond the brief, and the most recent work.* Our C++ engine stays the **single source of truth** for the park's geometry and motion. It exports them, and Blender adds what a production renderer does best: physically based materials, a physical sky, volumetric light, depth of field and motion blur.
 
+**Presenting?** There is a script for every stage in [docs/presentations/](docs/presentations/README.md): what each checkpoint asked for, what to say and show, and the file behind each piece of work. This stage's is [blender.md](docs/presentations/blender.md).
+
 | The sculpted head's mouth | Walking through the glowing tunnel | The swing ride at night |
 |---|---|---|
 | ![Mouth](docs/screenshots/blenderMouth.png) | ![Tunnel](docs/screenshots/blenderTunnel.png) | ![Swing ride at night](docs/screenshots/blenderSwing.png) |
