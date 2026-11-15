@@ -22,6 +22,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - Simplified park components built from those algorithms: the brass head, Ferris wheel, roller coaster, drop tower, carousel, props and lettering.
 - Output: still images written as PPM files. No window, no animation yet.
 
+**Presenting this stage?** Follow the script in [docs/presentations/checkpoint1.md](docs/presentations/checkpoint1.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
