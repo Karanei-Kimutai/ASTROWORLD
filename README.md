@@ -21,6 +21,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - Everything in one interactive app, with a renderer-independent scene description.
 - Switchable **flat / Gouraud / Phong** shading, every **projection** type (perspective with 1-, 2- and 3-point views, isometric, oblique cavalier and cabinet, multiview), a mipmapped ground texture, searchlights, and a first-person **coaster ride** camera.
 
+**Presenting this stage?** Follow the script in [docs/presentations/prototype.md](docs/presentations/prototype.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
