@@ -22,6 +22,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - The park comes alive: the Ferris wheel and carousel turn, the drop tower drops, a physics-timed coaster runs, and the crowd walks in. The day fades into night.
 - Frames are written out and combined into a video, or played live in the window.
 
+**Presenting this stage?** Follow the script in [docs/presentations/checkpoint2.md](docs/presentations/checkpoint2.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
