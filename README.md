@@ -21,6 +21,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - The park rebuilt in real-time **3D with OpenGL 3.3 core**: meshes, GLSL shaders, Phong lighting, depth buffer, MSAA and an orbit camera.
 - It uses GLFW for the window and our own GL function loader. Our CP2 matrices drive every transform.
 
+**Presenting this stage?** Follow the script in [docs/presentations/checkpoint3.md](docs/presentations/checkpoint3.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
