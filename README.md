@@ -21,6 +21,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - A CPU **Whitted ray tracer** (hard shadows, mirror reflections) and a **path tracer** (global illumination) of the same 3D park, with a BVH, Möller–Trumbore intersection and stratified anti-aliasing.
 - A mirror-ball sculpture and shared textures, plus the final report: [Checkpoint 4](#checkpoint-4--final-demonstration).
 
+**Presenting this stage?** Follow the script in [docs/presentations/final.md](docs/presentations/final.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
