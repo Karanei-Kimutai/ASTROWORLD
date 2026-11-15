@@ -21,6 +21,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - The real-time park made photoreal: **PBR** (Cook–Torrance), **shadow mapping**, **HDR** with ACES tone mapping, **bloom** and GPU instancing.
 - The inflatable gold head is the entrance, and ~140 visitors walk *through* its mouth into a much bigger park with new rides (wave swinger, pirate ship, teacups, bumper cars). See [the photorealism section](#photorealism--a-living-photoreal-park).
 
+**Presenting this stage?** Follow the script in [docs/presentations/photorealism.md](docs/presentations/photorealism.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
