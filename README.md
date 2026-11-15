@@ -21,6 +21,8 @@ An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. 
 - The same Checkpoint 1 renderer, also shown live in a window through SDL2 (a basic windowing library). SDL2 is only used for the final display stage; every pixel is still drawn by our code.
 - Keys switch between the day and night scenes, the 8-bit versions and the showcases.
 
+**Presenting this stage?** Follow the script in [docs/presentations/checkpoint1Window.md](docs/presentations/checkpoint1Window.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+
 **Run it** (after building):
 
 ```bash
