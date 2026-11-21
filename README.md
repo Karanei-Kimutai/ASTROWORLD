@@ -1,87 +1,56 @@
 # ASTROWORLD
 
-An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
+ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-> **You are on branch `checkpoint-1-window`: Checkpoint 1, windowed variant.** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
-
-> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
-> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
-> programs and images from the last branch you built, including programs this branch doesn't have
-> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
->
-> ```bash
-> rm -rf build && cmake -B build && cmake --build build -j
-> ```
->
-> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
-> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
-
-## This stage: Checkpoint 1, windowed variant
-
-- The same Checkpoint 1 renderer, also shown live in a window through SDL2 (a basic windowing library). SDL2 is only used for the final display stage; every pixel is still drawn by our code.
-- Keys switch between the day and night scenes, the 8-bit versions and the showcases.
-
-**Presenting this stage?** Follow the script in [docs/presentations/checkpoint1Window.md](docs/presentations/checkpoint1Window.md): what the stage asked for, what to say and show, and the file behind each piece of work.
-
-**Run it** (after building):
-
-```bash
-./build/astroworld                 # writes the PPM images into output/
-./build/astroworldWindow           # shows them live in a window (needs libsdl2-dev)
-```
-
-**What you should see:**
-
-![The live window viewer](docs/screenshots/windowViewer.png)
-
-| Day | Night |
-|---|---|
-| ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) |
-
----
+This is branch `checkpoint-1-window`: Checkpoint 1, windowed variant. Later stages are on later branches, and `main` has the latest work.
 
 ## Contents
 
-1. [Project roadmap and branches](#project-roadmap-and-branches)
-2. [Building and running](#building-and-running)
-3. [Project structure](#project-structure)
-4. [Course concepts → where they live in the code](#course-concepts--where-they-live-in-the-code)
-5. [How the software renderer maps to the rendering pipeline](#how-the-software-renderer-maps-to-the-rendering-pipeline)
-6. [Coding conventions](#coding-conventions)
-7. [Checkpoint log](#checkpoint-log)
+1. [Checkpoint 1, windowed variant](#checkpoint-1-windowed-variant)
+2. [Earlier stages](#earlier-stages)
+3. [Building and running](#building-and-running)
+4. [Course concepts in the code](#course-concepts-in-the-code)
+5. [The rendering pipeline](#the-rendering-pipeline)
+6. [Project structure](#project-structure)
+7. [Coding conventions](#coding-conventions)
+8. [Presentation notes](#presentation-notes)
+9. [Limitations](#limitations)
 
 ---
 
-## Project roadmap and branches
+## Checkpoint 1, windowed variant
 
-Each checkpoint has its own branch, created from the previous one, so every stage can be checked out and run exactly as it was submitted.
+The Checkpoint 1 renderer, shown live in a window. SDL2 opens the window and presents each finished frame buffer as a texture; it draws nothing itself, so every pixel still comes from our code. This is the last stage of the rendering pipeline, display, done in real time instead of to a file.
 
-| Branch | Stage | Focus |
-|---|---|---|
-| `checkpoint-1` | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
-| **`checkpoint-1-window` ← you are here** | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
-| `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
-| `checkpoint-3` | **CP3 – OpenGL integration** | Components ported to OpenGL (GLFW + GLAD); real-time camera and perspective projection. |
-| `prototype` | Prototype | All components combined into one interactive park. |
-| `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
+![The live window](docs/screenshots/windowViewer.png)
 
-*Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
+The window switches between the day and night scenes, slides the time of day so that dusk blends both moods, shows the 8-bit versions and opens the algorithm and colour showcases. The image files from `checkpoint-1` are still produced by `astroworld`; the window is an extra program, `astroworldWindow`, built only when SDL2 is installed.
 
-### Earlier stages, newest first
+---
 
-Every earlier stage has its own branch. Check one out (and rebuild) to run it exactly as it was.
+## Earlier stages
 
-#### 1. Checkpoint 1 – Technical foundation
+Newest first. Each stage is on its own branch, with a README describing it as it stood.
 
-*Branch `checkpoint-1` (graded).* Every course algorithm written by hand in C++ (lines, circles, ellipses, clipping, curves, fills, colour models) and used to draw a still park, saved as PPM images.
+### 1. Checkpoint 1: technical foundation
 
-![The still park by day](docs/screenshots/astroworldDay.png)
+Branch [`checkpoint-1`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-1)
+
+The course's raster algorithms written by hand in C++ (lines, circles, ellipses, clipping, curves, fills and colour models) and used to draw the park as still images.
+
+![The park by day](docs/screenshots/astroworldDay.png)
 
 ---
 
 ## Building and running
 
 **Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. The renderer itself uses **no external libraries**. The live window (`astroworldWindow`, this branch) also needs **SDL2** (`sudo apt install libsdl2-dev`); without it CMake skips that target. `ffmpeg` is only used to convert screenshots for this README.
+
+`build/` and `output/` are not tracked by git, so after switching branches they still hold the programs and images of the last branch you built. Rebuild from scratch on each branch:
+
+```bash
+rm -rf build && cmake -B build && cmake --build build -j
+```
 
 ### With CMake
 
@@ -92,7 +61,7 @@ cmake --build build
 ./build/astroworldWindow    # show them live in a window
 ```
 
-### Without CMake (single command)
+### Without CMake
 
 ```bash
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
@@ -100,9 +69,9 @@ g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astrow
 
 ### Live window (`checkpoint-1-window`)
 
-![Window viewer at dusk](docs/screenshots/windowViewer.png)
-
 `astroworldWindow` runs exactly the same pure C++ renderer. SDL2 only handles the last pipeline stage, **display**: each finished `FrameBuffer` is uploaded to a streaming texture (`SDL_PIXELFORMAT_RGB24` has the same byte layout as our `Color`, so nothing is converted) and presented in a resizable, letterboxed window. The window only redraws when something changes.
+
+<details><summary>Controls and options</summary>
 
 | Key | Action |
 |---|---|
@@ -115,6 +84,8 @@ g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astrow
 | `Esc` / `Q` | Quit |
 
 Command-line options: `--night <0..1>` sets the starting time of day. `--capture <file.ppm>` renders one frame, reads it **back** from the renderer with `SDL_RenderReadPixels`, saves it and exits; add `--with-help` to keep the overlay. The capture of the day scene matches `astroworld`'s PPM output byte for byte, which shows the window displays the frame buffer exactly.
+
+</details>
 
 ### Output
 
@@ -129,7 +100,7 @@ Running `./build/astroworld [outputDirectory]` (default `output/`) writes:
 | `algorithmShowcase.ppm` | Every CP1 algorithm shown on its own, labelled |
 | `colorShowcase.ppm` | HSV, tints/shades/tones, RGB vs CMYK, colour depth, palette |
 
-PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extension. To regenerate the PNGs in `docs/screenshots/`:
+To regenerate the PNGs in `docs/screenshots/`:
 
 ```bash
 ./tools/exportScreenshots.sh
@@ -137,55 +108,7 @@ PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extensi
 
 ---
 
-## Project structure
-
-```
-src/
-├── main.cpp                    CP1 entry point: renders and saves all images
-├── windowMain.cpp              Live SDL2 viewer for the same images (display stage only)
-├── core/
-│   ├── vec2.h                  2D vector maths, pi, rounding helper
-│   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
-│   ├── frameBuffer.h/.cpp      Pixel memory, spans, alpha blending, dithering, PPM output
-│   ├── coverageMask.h/.cpp     Off-screen stencil mask + supersampled (anti-aliased) compositing
-│   └── simpleRandom.h          Deterministic xorshift random generator
-├── raster/
-│   ├── rasterTypes.h           Plot/span callbacks: rasterization kept separate from shading
-│   ├── lines.h/.cpp            DDA and Bresenham lines
-│   ├── circles.h/.cpp          Midpoint circle (8-way) and midpoint ellipse (4-way)
-│   ├── clipping.h/.cpp         Cohen–Sutherland line clipping
-│   └── strokes.h/.cpp          Thick and tapered strokes (scan-line quads + circle caps)
-├── curves/
-│   ├── bezier.h/.cpp           Cubic Bézier (Bernstein) and any-degree de Casteljau
-│   └── spline.h/.cpp           Catmull–Rom splines (open and closed)
-├── fill/
-│   ├── scanLineFill.h/.cpp     Edge Table / Active Edge Table polygon fill (even-odd)
-│   └── boundaryFill.h/.cpp     4- and 8-connected boundary fill (explicit stack)
-├── text/
-│   ├── bitmapFont.h/.cpp       5×7 raster font for labels
-│   └── astroWordmark.h/.cpp    The ASTROWORLD logo: flared vector letters, globe O, ring O
-├── scene/
-│   ├── astroworldScene.h/.cpp  Composes everything into the park (painter's algorithm)
-│   ├── backdrop.h/.cpp         Day/night sky, clouds, stars, searchlights, skyline, fence, plaza
-│   ├── astroHead.h/.cpp        The brass head: dreads, closed eyes, nose, glowing mouth portal
-│   ├── brassShading.h          Matte-brass surface shader (faux lighting)
-│   ├── carnivalProps.h/.cpp    Rocket statue, big-top tent, park sign, bunting
-│   ├── ferrisWheel.h/.cpp      Ferris wheel
-│   ├── rollerCoaster.h/.cpp    Roller coaster track, supports and train
-│   ├── dropTower.h/.cpp        Drop tower
-│   ├── carousel.h/.cpp         Carousel
-│   └── foreground.h/.cpp       Crowd walking into the mouth, balloon vendor
-└── showcase/
-    ├── algorithmShowcase.h/.cpp  Labelled 4×2 grid of algorithm demos
-    └── colorShowcase.h/.cpp      Colour-theory demos
-tools/exportScreenshots.sh      PPM → PNG for documentation
-docs/screenshots/               Checkpoint screenshots
-docs/references/                Reference artwork the scene is matched against (local only, not committed)
-```
-
----
-
-## Course concepts → where they live in the code
+## Course concepts in the code
 
 ### Hardware and core fundamentals
 | Concept | Implementation |
@@ -239,7 +162,7 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## How the software renderer maps to the rendering pipeline
+## The rendering pipeline
 
 | Pipeline stage | In this project (CP1) |
 |---|---|
@@ -255,6 +178,58 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
+## Project structure
+
+<details><summary>Source tree</summary>
+
+```
+src/
+├── main.cpp                    CP1 entry point: renders and saves all images
+├── windowMain.cpp              Live SDL2 viewer for the same images (display stage only)
+├── core/
+│   ├── vec2.h                  2D vector maths, pi, rounding helper
+│   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
+│   ├── frameBuffer.h/.cpp      Pixel memory, spans, alpha blending, dithering, PPM output
+│   ├── coverageMask.h/.cpp     Off-screen stencil mask + supersampled (anti-aliased) compositing
+│   └── simpleRandom.h          Deterministic xorshift random generator
+├── raster/
+│   ├── rasterTypes.h           Plot/span callbacks: rasterization kept separate from shading
+│   ├── lines.h/.cpp            DDA and Bresenham lines
+│   ├── circles.h/.cpp          Midpoint circle (8-way) and midpoint ellipse (4-way)
+│   ├── clipping.h/.cpp         Cohen–Sutherland line clipping
+│   └── strokes.h/.cpp          Thick and tapered strokes (scan-line quads + circle caps)
+├── curves/
+│   ├── bezier.h/.cpp           Cubic Bézier (Bernstein) and any-degree de Casteljau
+│   └── spline.h/.cpp           Catmull–Rom splines (open and closed)
+├── fill/
+│   ├── scanLineFill.h/.cpp     Edge Table / Active Edge Table polygon fill (even-odd)
+│   └── boundaryFill.h/.cpp     4- and 8-connected boundary fill (explicit stack)
+├── text/
+│   ├── bitmapFont.h/.cpp       5×7 raster font for labels
+│   └── astroWordmark.h/.cpp    The ASTROWORLD logo: flared vector letters, globe O, ring O
+├── scene/
+│   ├── astroworldScene.h/.cpp  Composes everything into the park (painter's algorithm)
+│   ├── backdrop.h/.cpp         Day/night sky, clouds, stars, searchlights, skyline, fence, plaza
+│   ├── astroHead.h/.cpp        The brass head: dreads, closed eyes, nose, glowing mouth portal
+│   ├── brassShading.h          Matte-brass surface shader (faux lighting)
+│   ├── carnivalProps.h/.cpp    Rocket statue, big-top tent, park sign, bunting
+│   ├── ferrisWheel.h/.cpp      Ferris wheel
+│   ├── rollerCoaster.h/.cpp    Roller coaster track, supports and train
+│   ├── dropTower.h/.cpp        Drop tower
+│   ├── carousel.h/.cpp         Carousel
+│   └── foreground.h/.cpp       Crowd walking into the mouth, balloon vendor
+└── showcase/
+    ├── algorithmShowcase.h/.cpp  Labelled 4×2 grid of algorithm demos
+    └── colorShowcase.h/.cpp      Colour-theory demos
+tools/exportScreenshots.sh      PPM → PNG for documentation
+docs/screenshots/               Checkpoint screenshots
+docs/references/                Reference artwork the scene is matched against (local only, not committed)
+```
+
+</details>
+
+---
+
 ## Coding conventions
 
 - **camelCase** for variables, functions, members and file names (`fillPolygonScanLine`, `astroHead.cpp`). Types use UpperCamelCase (`FrameBuffer`, `RollerCoaster`).
@@ -265,34 +240,14 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Checkpoint log
+## Presentation notes
 
-### Checkpoint 1 – Technical foundation (pure C++)
+Speaker notes for this stage are in [docs/presentations/checkpoint1Window.md](docs/presentations/checkpoint1Window.md). They cover the brief, a script, and where each piece of work lives in the code.
 
-**What are we building?**
-An animated ASTROWORLD theme park that recreates the album world. The giant brass head (eyes closed, dreads arching over the crown) is both the centrepiece and the entrance: its open mouth on the ground glows, and visitors walk in. Around it are a Ferris wheel, a teal lattice roller coaster, a drop tower, a carousel, a rocket statue, a striped big top, bunting and a black palisade fence. The scene has a day mood (the cover) and a night mood (the starfield artwork), with the "Greetings from ASTROWORLD / Wish you were here" postcard logo above.
+---
 
-**What graphics concepts are used?**
-Frame buffer and raster vs. vector graphics, RGB/HSV/CMYK colour models, tints/shades/tones, 24 → 8-bit colour reduction, DDA, Bresenham, midpoint circle and ellipse, Cohen–Sutherland clipping, Bézier curves, Catmull–Rom splines, scan-line and boundary fill, painter's-algorithm layering, stencil masking and supersampling anti-aliasing. Details are in the [table above](#course-concepts--where-they-live-in-the-code).
+## Limitations
 
-**What has been completed?**
-- A software rasterizer written from scratch: every algorithm above, with no graphics libraries
-- Each park component as a self-contained, parameterised struct: `FerrisWheel`, `RollerCoaster`, `DropTower`, `Carousel`, `AstroHead`, plus props, backdrop and foreground
-- The ASTROWORLD logo matched to the reference artwork: flared waisted letters with teardrop counters, the Earth-smiley O, the concentric-ring O, and flat per-letter colours, drawn with anti-aliasing
-- Day and night renders controlled by one `nightAmount` value
-- An algorithm showcase and a colour showcase for the checkpoint demo
-- 24-bit, 8-bit and dithered 8-bit renders of the day scene
-
-| Algorithm showcase | Colour showcase |
-|---|---|
-| ![Algorithms](docs/screenshots/algorithmShowcase.png) | ![Colour](docs/screenshots/colorShowcase.png) |
-
-| 8-bit (3-3-2) | 8-bit dithered |
-|---|---|
-| ![8-bit](docs/screenshots/astroworldDay8Bit.png) | ![8-bit dither](docs/screenshots/astroworldDay8BitDither.png) |
-
-**What are we doing next? (CP2)**
-- A `Matrix3` / `Matrix4` class for homogeneous-coordinate translation, rotation and scaling
-- Rotate the Ferris wheel and carousel, drop the tower seats, run the coaster train along the spline by arc length, bob the horses, sway the dreads and bunting, walk the crowd into the mouth, sweep the searchlights, and run a day → night cycle with `nightAmount`
-- Render a numbered frame sequence and combine it into an MP4 with `ffmpeg`
-- The components already expose `rotationAngle`, `seatY`, `trainDistance` and `nightAmount`, so CP2 only has to drive them over time
+- The window shows still scenes; the time-of-day slider changes the mood, but nothing animates yet.
+- It needs SDL2; without it only the image-file renderer is built.
+- Everything listed for Checkpoint 1 still applies: 2D layers, faked lighting and a bitmap font.
