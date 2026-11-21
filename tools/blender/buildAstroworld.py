@@ -1,7 +1,7 @@
 """
 buildAstroworld.py - rebuild the ASTROWORLD park in Blender from our engine's export.
 
-Side project (branch 'blender'). Our C++ engine (astroworldExport) stays the single
+Taking it a step further (branch 'blender'). Our C++ engine (astroworldExport) stays the single
 source of truth for geometry and animation; this script only adds what Blender does
 best: production materials, a physical sky with a real sunset, volumetric glow,
 camera moves, motion blur and high-quality rendering (EEVEE or Cycles).

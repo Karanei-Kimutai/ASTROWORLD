@@ -27,8 +27,8 @@ Every guide has the same parts:
 | OpenGL integration | Checkpoint 3 | [checkpoint3.md](checkpoint3.md) | `checkpoint-3` |
 | Prototype: all components combined | Prototype stage | [prototype.md](prototype.md) | `prototype` |
 | Checkpoint 4: ray tracing and path tracing | Checkpoint 4 (final demo, what works, what doesn't, recommendations) | [checkpoint4.md](checkpoint4.md) | `checkpoint-4` |
-| Photorealism (side project) | Beyond the brief | [photorealism.md](photorealism.md) | `photorealism` |
-| Blender (side project, latest) | Beyond the brief | [blender.md](blender.md) | `blender`, `main` |
+| Taking a step further: photorealism | After Checkpoint 4 | [photorealism.md](photorealism.md) | `photorealism` |
+| Taking a step further: Blender (latest) | After Checkpoint 4 | [blender.md](blender.md) | `blender`, `main` |
 
 Each branch carries its own guide and the guides of every earlier stage. `main` has them all.
 

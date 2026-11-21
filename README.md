@@ -2,7 +2,7 @@
 
 ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-This is branch `blender`, which `main` also points to: the latest work, a side project after the final submission. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
+This is branch `blender`, which `main` also points to: the latest work, taking the project a step further after Checkpoint 4. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
 
 [![Watch the journey from Checkpoint 1 to Blender](docs/media/journeyThumbnail.png)](docs/media/astroworldJourney.mp4)
 
@@ -10,7 +10,7 @@ This is branch `blender`, which `main` also points to: the latest work, a side p
 
 ## Contents
 
-1. [Blender: the park as a film (side project)](#blender-the-park-as-a-film-side-project)
+1. [Taking a step further: Blender](#taking-a-step-further-blender)
 2. [Earlier stages](#earlier-stages)
 3. [Project report](#project-report)
 4. [Building and running](#building-and-running)
@@ -23,7 +23,7 @@ This is branch `blender`, which `main` also points to: the latest work, a side p
 
 ---
 
-## Blender: the park as a film (side project)
+## Taking a step further: Blender
 
 The latest stage keeps our C++ engine as the single source of truth for the park and hands the final image to Blender. The engine decides every mesh, every position on every frame, the ride physics and the lighting timeline. Blender adds what a production renderer does best: physically based materials, a physical sky, volumetric light, motion blur and a camera fly-through.
 
@@ -63,9 +63,9 @@ The latest stage keeps our C++ engine as the single source of truth for the park
 
 Newest first. Each stage is on its own branch, with a README describing it as it stood.
 
-### 1. Photorealism
+### 1. Taking a step further: photorealism
 
-Branch [`photorealism`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/photorealism) · side project
+Branch [`photorealism`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/photorealism)
 
 The real-time park made photoreal: physically based materials, shadow mapping, HDR with ACES tone mapping, bloom and GPU instancing. The inflatable gold head becomes the entrance, and about 140 visitors walk through its mouth into a much larger park.
 
@@ -73,7 +73,7 @@ The real-time park made photoreal: physically based materials, shadow mapping, H
 
 ### 2. Checkpoint 4: ray tracing and path tracing
 
-Branch [`checkpoint-4`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4) · final project
+Branch [`checkpoint-4`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4)
 
 A CPU Whitted ray tracer and a path tracer that render the same 3D scene as the OpenGL park, with a BVH and supersampling.
 
@@ -411,7 +411,7 @@ tools/blender/render.sh animation              # all 720 frames -> output/astrow
 ### Scene description (prototype)
 | Concept | Implementation |
 |---|---|
-| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the final-phase ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
+| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the Checkpoint 4 ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
 | Camera paths | The coaster ride camera follows the spline: eye at the front car, looking a few metres ahead along the track, banked with the car's up vector |
 
 ### Reusing earlier work in CP3
@@ -500,7 +500,7 @@ src/
 ├── windowMain.cpp              Live SDL2 player for the animation (display stage only)
 ├── glMain.cpp                  CP3: GLFW window + OpenGL context, interactive 3D park
 ├── rayMain.cpp                 Checkpoint 4: command-line ray tracer / path tracer
-├── exportMain.cpp              Blender side project: exports the 3D park and its animation for Blender
+├── exportMain.cpp              Blender (a step further): exports the 3D park and its animation for Blender
 ├── raytrace/
 │   ├── rayGeometry.h/.cpp      World-space triangles from a ParkFrame, BVH, Moller-Trumbore intersection
 │   └── rayTracer.h/.cpp        Whitted + path tracing, shadow rays, reflections, sky model, supersampling, threads
@@ -570,7 +570,7 @@ src/
     └── transformShowcase.h/.cpp  CP2 transformation demos
 tools/exportScreenshots.sh      PPM → PNG for documentation
 tools/makeVideo.sh              Animation → MP4 (and README GIF) from either renderer, frames piped into ffmpeg
-tools/blender/                  Blender side project: render.sh, buildAstroworld.py (scene build), astroworldPlayer.py (playback)
+tools/blender/                  Blender (a step further): render.sh, buildAstroworld.py (scene build), astroworldPlayer.py (playback)
 assets/blender/head.blend       The hand-sculpted inflatable head, dreads and mouth tunnel used by the Blender build
 docs/screenshots/               Checkpoint screenshots
 docs/references/                Reference artwork the scene is matched against (local only, not committed)

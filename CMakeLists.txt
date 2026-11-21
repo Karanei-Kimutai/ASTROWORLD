@@ -5,8 +5,8 @@
 #   astroworld        CP1/CP2 software renderer: stills and animation frames as PPM (no dependencies)
 #   astroworldWindow  CP2 live player for the software renderer (needs SDL2; skipped if not found)
 #   astroworldGl      CP3+ real-time 3D park in OpenGL 3.3 core (needs GLFW; skipped if not found)
-#   astroworldRay     final phase: CPU ray tracer / path tracer of the same 3D park (no dependencies)
-#   astroworldExport  side project: exports the 3D park and its animation for Blender (no dependencies)
+#   astroworldRay     Checkpoint 4: CPU ray tracer / path tracer of the same 3D park (no dependencies)
+#   astroworldExport  a step further: exports the 3D park and its animation for Blender (no dependencies)
 
 cmake_minimum_required(VERSION 3.16)
 project(ASTROWORLD LANGUAGES CXX)
@@ -106,7 +106,7 @@ else()
     message(STATUS "GLFW not found - skipping astroworldGl (install libglfw3-dev to build it)")
 endif()
 
-# Final phase: offline CPU ray tracer / path tracer for the 3D park (no external libraries, uses threads).
+# Checkpoint 4: offline CPU ray tracer / path tracer for the 3D park (no external libraries, uses threads).
 find_package(Threads REQUIRED)
 add_executable(astroworldRay
     src/rayMain.cpp
@@ -121,7 +121,7 @@ add_executable(astroworldRay
 )
 target_link_libraries(astroworldRay PRIVATE astroworldCore Threads::Threads)
 
-# Side project (branch 'blender'): export the 3D park and its animation for Blender.
+# Taking it a step further (branch 'blender'): export the 3D park and its animation for Blender.
 add_executable(astroworldExport
     src/exportMain.cpp
     src/mesh/meshBuilder.cpp

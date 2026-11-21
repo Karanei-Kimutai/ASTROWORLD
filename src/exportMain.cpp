@@ -1,6 +1,6 @@
 /**
  * @file exportMain.cpp
- * @brief Exports the 3D park and its animation for Blender (side project, branch 'blender').
+ * @brief Exports the 3D park and its animation for Blender (taking it a step further, branch 'blender').
  *
  * Our engine stays the single source of truth: the same ParkScene that the
  * OpenGL renderer and the ray tracer draw is sampled frame by frame and written

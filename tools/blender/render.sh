@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Export the park from our engine and build / render it in Blender (side project, branch 'blender').
+# Export the park from our engine and build / render it in Blender (taking it a step further, branch 'blender').
 #
 # Usage:
 #   tools/blender/render.sh scene                 # export + build output/blender/astroworld.blend (open it in Blender)

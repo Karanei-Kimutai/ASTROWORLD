@@ -1,7 +1,7 @@
 """
 astroworldPlayer.py - plays our engine's exported animation inside Blender.
 
-Side project (branch 'blender'). The park's motion (rides, riders, ~140 visitors), the
+Taking it a step further (branch 'blender'). The park's motion (rides, riders, ~140 visitors), the
 day/night cycle and the lights come from astroworldExport as data files, NOT as Blender
 keyframes (that would be millions of keys). This module applies one frame of that data to
 the scene and registers itself as a frame-change handler, so scrubbing the timeline, playing

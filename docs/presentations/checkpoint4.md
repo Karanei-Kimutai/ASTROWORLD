@@ -1,4 +1,4 @@
-# Presentation guide – Checkpoint 4: the final project
+# Presentation guide – Checkpoint 4
 
 > This guide describes the `checkpoint-4` stage. Its file links open that branch on GitHub, because some files moved or changed in later stages.
 
@@ -64,7 +64,7 @@ The image is written to `output/raytrace_whitted.ppm` or `output/raytrace_path.p
 >
 > **Checkpoint 4 questions:** *Final demonstration · What works · What doesn't · Final changes or recommendations.*
 
-In plain words: **finish it, show it, and be honest about it.** Show the finished project running. Say clearly what is done and what isn't, and what you'd do next. The final stage also covers the last syllabus topics, **ray tracing**, **global illumination** and **anti-aliasing**, with a third renderer.
+In plain words: **finish it, show it, and be honest about it.** Show the finished project running. Say clearly what is done and what isn't, and what you'd do next. Checkpoint 4 also covers the last syllabus topics, **ray tracing**, **global illumination** and **anti-aliasing**, with a third renderer.
 
 ---
 
@@ -72,7 +72,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 ### 3.1 Opening (30 seconds)
 
-> "ASTROWORLD is a theme park built from the *Astroworld* album cover, with the giant golden head as its entrance. Over the checkpoints we built it three times. First a 2D renderer where we wrote every pixel ourselves. Then a real-time 3D park in OpenGL. And now, for the final, a **ray tracer** that draws the same 3D park the way light really behaves. I'll demonstrate all three, then tell you what works, what doesn't, and what I'd change."
+> "ASTROWORLD is a theme park built from the *Astroworld* album cover, with the giant golden head as its entrance. Over the checkpoints we built it three times. First a 2D renderer where we wrote every pixel ourselves. Then a real-time 3D park in OpenGL. And now, for Checkpoint 4, a **ray tracer** that draws the same 3D park the way light really behaves. I'll demonstrate all three, then tell you what works, what doesn't, and what I'd change."
 
 ### 3.2 Final demonstration, part 1: the 2D software renderer (1½ minutes)
 
@@ -103,7 +103,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 **Do:** run `./build/astroworldRay --width 640 --height 360`. While it renders (a few seconds), talk:
 
-> "This is new for the final. OpenGL works *object by object*: it takes each triangle and asks which pixels it covers. A ray tracer works *pixel by pixel*. For every pixel it shoots a ray from the eye into the scene and asks *what does this ray hit first?* Then, from that point, it shoots more rays: one towards the sun to check for **shadow**, and, for shiny things, one in the **mirror direction** to see what is **reflected**. That's called **Whitted ray tracing**.
+> "This is new for Checkpoint 4. OpenGL works *object by object*: it takes each triangle and asks which pixels it covers. A ray tracer works *pixel by pixel*. For every pixel it shoots a ray from the eye into the scene and asks *what does this ray hit first?* Then, from that point, it shoots more rays: one towards the sun to check for **shadow**, and, for shiny things, one in the **mirror direction** to see what is **reflected**. That's called **Whitted ray tracing**.
 >
 > Importantly, it draws the *exact same park*. It reads the same `ParkScene` the OpenGL program draws, the same meshes, materials, textures, sky, camera and animation time."
 
@@ -166,7 +166,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 > - A **sculpted head** with a real mouth.
 > - **Physically based materials** and **HDR** in OpenGL too.
 >
-> And I've since done most of that list on two side branches. `photorealism` adds shadow maps, HDR, bloom, PBR materials and a sculpted head. `blender` exports the park to Blender for a film-quality render. Thank you."
+> And I've since done most of that list on two further branches, taking the project a step further. `photorealism` adds shadow maps, HDR, bloom, PBR materials and a sculpted head. `blender` exports the park to Blender for a film-quality render. Thank you."
 
 *(Only say the last part if you're allowed to mention work after the deadline. Otherwise stop at "Thank you".)*
 
@@ -176,7 +176,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 | What was asked / needed | What we did | Where |
 |---|---|---|
-| **Refine and complete** | Three finished renderers of one park, plus the final report | [src/main.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/main.cpp), [src/windowMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/windowMain.cpp), [src/glMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/glMain.cpp), [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/rayMain.cpp) |
+| **Refine and complete** | Three finished renderers of one park, plus the Checkpoint 4 report | [src/main.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/main.cpp), [src/windowMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/windowMain.cpp), [src/glMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/glMain.cpp), [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/rayMain.cpp) |
 | **CP4: final demonstration** | The walkthrough above; the up-to-date version is in the project report | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report* |
 | **CP4: what works / what doesn't / recommendations** | Written up honestly; this branch's limitations close its README | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report*; [this branch's README](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/README.md#limitations), section *Limitations* |
 | Ray tracing (Whitted): primary, shadow and reflection rays | `traceWhitted`: recursive mirror reflections, shadow rays, fog | [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
@@ -229,4 +229,4 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 ## 7. The one-minute version
 
-> "The final ASTROWORLD has three renderers of one theme park. A 2D renderer where we wrote every line, circle, curve and fill algorithm ourselves. A real-time OpenGL park with every projection, flat, Gouraud and Phong shading, mipmapped textures and a coaster ride. And a new CPU ray tracer that draws the identical 3D scene. Whitted mode gives hard shadows and mirror reflections. Path-tracing mode gives global illumination. A BVH makes it practical, and supersampling smooths the edges. What works: every syllabus topic, visible and mapped to its code. What doesn't: a blobby 3D head, no real-time shadows, and an offline ray tracer. Next: shadow mapping, physically based materials, a sculpted head and a faster ray tracer."
+> "At Checkpoint 4, ASTROWORLD has three renderers of one theme park. A 2D renderer where we wrote every line, circle, curve and fill algorithm ourselves. A real-time OpenGL park with every projection, flat, Gouraud and Phong shading, mipmapped textures and a coaster ride. And a new CPU ray tracer that draws the identical 3D scene. Whitted mode gives hard shadows and mirror reflections. Path-tracing mode gives global illumination. A BVH makes it practical, and supersampling smooths the edges. What works: every syllabus topic, visible and mapped to its code. What doesn't: a blobby 3D head, no real-time shadows, and an offline ray tracer. Next: shadow mapping, physically based materials, a sculpted head and a faster ray tracer."

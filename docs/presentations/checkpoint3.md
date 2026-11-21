@@ -147,11 +147,11 @@ In plain words: **move the park onto the graphics card with OpenGL, and reuse wh
 
 > "The code is on GitHub at github.com/Karanei-Kimutai/ASTROWORLD, on the `checkpoint-3` branch.
 >
-> What remains for the prototype and final stages:
+> What remains for the prototype and Checkpoint 4:
 > - **Shading modes:** flat, Gouraud and Phong shading, side by side.
 > - **Every projection** in the syllabus, not just perspective.
 > - **Texture mapping** with mipmaps.
-> - **A ray tracer and path tracer** for the final photoreal images.
+> - **A ray tracer and path tracer** for photoreal images in Checkpoint 4.
 > - **More interaction,** like riding the roller coaster."
 
 ### 3.7 Close (10 seconds)

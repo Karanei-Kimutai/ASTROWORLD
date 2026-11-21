@@ -1,9 +1,9 @@
-# Presentation guide – Blender: the park rendered in Blender (side project, latest work)
+# Presentation guide – Taking a step further: Blender (latest work)
 
 | | |
 |---|---|
 | **Branch** | [`blender`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/blender), also on `main`; built on top of `photorealism` |
-| **Course stage** | Beyond the brief. The most recent work |
+| **Course stage** | Taking a step further. The most recent work |
 | **Presentation questions it answers** | "Where did you take the project in the end?" and "How does your engine fit into a real production pipeline?" |
 | **Speaking time** | about 8 minutes, plus questions |
 | **What you show** | The 30-second film `output/astroworldBlender.mp4`, the `.blend` file playing inside Blender, and the new closed-circuit roller coaster |
