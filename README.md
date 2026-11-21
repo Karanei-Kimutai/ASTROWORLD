@@ -12,7 +12,7 @@ This is branch `checkpoint-1`: Checkpoint 1. Later stages are on later branches,
 4. [The rendering pipeline](#the-rendering-pipeline)
 5. [Project structure](#project-structure)
 6. [Coding conventions](#coding-conventions)
-7. [Presentation notes](#presentation-notes)
+7. [Branch guide](#branch-guide)
 8. [Limitations](#limitations)
 
 ---
@@ -228,9 +228,9 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Presentation notes
+## Branch guide
 
-Speaker notes for this stage are in [docs/presentations/checkpoint1.md](docs/presentations/checkpoint1.md). They cover the brief, a script, and where each piece of work lives in the code.
+[docs/guides/checkpoint1.md](docs/guides/checkpoint1.md) describes this stage: what it set out to do, what we built and how it works, with links to the code.
 
 ---
 
