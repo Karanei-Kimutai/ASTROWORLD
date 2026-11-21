@@ -1,0 +1,34 @@
+# ASTROWORLD: Checkpoint 3, OpenGL integration
+
+Checkpoint 3 is where ASTROWORLD moved from the processor to the graphics card. The task was to bring an OpenGL library into the project, so we rebuilt the park as a real-time 3D scene that you can move around in, while keeping everything we had built in the first two checkpoints.
+
+By the end of Checkpoint 2 the park was fully animated, but our software renderer could only draw it at about 15 to 20 frames per second, and it was still a flat 2D picture. OpenGL lets the graphics card do the drawing. We used GLFW to open the window and create the OpenGL context, and targeted OpenGL 3.3 core, the modern version of the API in which everything goes through shaders. Normally a project would use a library such as GLAD to look up OpenGL's functions in the graphics driver, but it wasn't available to us offline, so we wrote our own loader that finds each function at runtime, which is exactly the job GLAD does.
+
+The graphics card needs data in its own memory. Each model is uploaded as a vertex buffer holding its points and normals, an index buffer saying which points form each triangle, and a vertex array object that tells OpenGL how to read them. We wrapped these, together with shader programs, textures and frame buffers, in small C++ classes that release their resources automatically when they are no longer needed, so nothing leaks on the graphics card. Our shaders, written in GLSL, run on the graphics card for every vertex and every pixel. The vertex shader multiplies each point by the model, view and projection matrices to place it on the screen, and the fragment shader works out the colour of each pixel.
+
+Lighting uses the Blinn-Phong model. Every surface gets ambient light, diffuse light that depends on the angle between the surface and the light, and a specular highlight that makes brass and chrome shine. Besides the sun, a point light sits inside the head's mouth, so the gate glows and lights up the ground around it at night. A depth buffer makes sure nearer surfaces hide the ones behind them, which replaces the back-to-front drawing order we used in 2D. To smooth jagged edges, the scene is drawn into an off-screen buffer with four samples per pixel, called multisample anti-aliasing (MSAA), and then resolved onto the screen. The sky is drawn procedurally in a shader, and fog fades distant objects into it, so the park sits in a single continuous world.
+
+Every model in the park is built in code. We wrote a mesh builder that creates boxes, cylinders, cones, ellipsoids, tori, swept tubes and flat panels, each with correct normals for lighting, and the rides are assembled from those pieces. The head is the most complex: its features are wrapped onto an ellipsoid, and the dreads are tubes swept along curves taken from the same head shape we drew in 2D in Checkpoint 1. The normals are transformed with the inverse-transpose of each model matrix, so stretched shapes such as the ellipsoid still light correctly.
+
+Most importantly, we didn't start again from nothing. The 4×4 matrix class from Checkpoint 2 builds every transformation, and we added a `lookAt` function to it for the camera. The splines from Checkpoint 1 shape the coaster track and the dreads. The animation timeline was moved into a shared file, so the 2D and 3D versions of the park follow exactly the same 30-second day-to-night cycle, with the same ride positions at every moment. Even the software renderer still has a job: images such as the postcard lettering are drawn by our own 2D code and uploaded as textures. To give them clean transparent edges, we render each one twice, on a black and on a white background, and work out the transparency from the difference between the two.
+
+The camera orbits around the park. Its position is described by an angle around the target, an angle above the ground and a distance, which are converted into an eye position and turned into a view matrix by `lookAt`. You can drag to orbit and scroll to zoom, and there are four preset viewpoints: the album cover, an aerial view, the Ferris wheel and the carousel. The park can also export frames for video, exactly as the software renderer did.
+
+The difference in speed was the clearest result of this checkpoint. On the graphics card the 3D park runs at about 83 frames per second, even though it is a far heavier scene than the 2D one. When the same OpenGL program is forced to run on the processor instead, it drops to about 14. Under WSL, Mesa normally runs OpenGL on the processor, so the program automatically switches to the driver that forwards OpenGL to the real graphics card when one is available.
+
+By the end of Checkpoint 3 the park existed in two forms: the original 2D software renderer and a new real-time 3D version on the graphics card, both driven by the same animation. The next step was to join them into one program and cover the remaining concepts from the course, which is what the prototype did.
+
+## Where to find it in the code
+
+The links open the `checkpoint-3` branch.
+
+- The 3D program: [src/glMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glMain.cpp)
+- Our OpenGL function loader: [src/gl/glFunctions.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/gl/glFunctions.cpp)
+- GPU buffers, shaders, textures and the MSAA target: [src/gl/glResources.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/gl/glResources.cpp)
+- Shaders (Blinn-Phong, fog, sky): [src/glScene/shaders.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/shaders.h)
+- The park in 3D: [src/glScene/astroworldPark.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/astroworldPark.cpp), [src/glScene/parkModels.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/parkModels.cpp)
+- The head: [src/glScene/headModel.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/headModel.cpp), [src/scene/astroHeadShape.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/scene/astroHeadShape.h)
+- Procedural meshes: [src/mesh/meshBuilder.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/mesh/meshBuilder.cpp)
+- Orbit camera and `lookAt`: [src/glScene/orbitCamera.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/orbitCamera.h), [src/math/matrix4.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/math/matrix4.cpp)
+- Software-rendered overlays: [src/glScene/overlayImage.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/glScene/overlayImage.cpp)
+- The shared timeline: [src/animation/astroworldTimeline.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-3/src/animation/astroworldTimeline.cpp)
