@@ -13,7 +13,7 @@ This is branch `checkpoint-1-window`: Checkpoint 1, windowed variant. Later stag
 5. [The rendering pipeline](#the-rendering-pipeline)
 6. [Project structure](#project-structure)
 7. [Coding conventions](#coding-conventions)
-8. [Presentation notes](#presentation-notes)
+8. [Branch guide](#branch-guide)
 9. [Limitations](#limitations)
 
 ---
@@ -240,9 +240,9 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Presentation notes
+## Branch guide
 
-Speaker notes for this stage are in [docs/presentations/checkpoint1Window.md](docs/presentations/checkpoint1Window.md). They cover the brief, a script, and where each piece of work lives in the code.
+[docs/guides/checkpoint1Window.md](docs/guides/checkpoint1Window.md) describes this stage: what it set out to do, what we built and how it works, with links to the code.
 
 ---
 
