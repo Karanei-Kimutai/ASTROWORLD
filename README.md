@@ -46,7 +46,7 @@ The animation timeline is shared with the software renderer, so the two stay in 
 
 **Interaction and performance.** The camera orbits, zooms and pans, with four preset viewpoints and full playback control. The scene runs at about 83 fps on the GPU and about 14 fps when the same code runs on Mesa's CPU rasterizer.
 
-**Next, for the prototype and the final project.**
+**Next, for the prototype and Checkpoint 4.**
 - Switchable flat, Gouraud and Phong shading.
 - More texture mapping.
 - Shadows and searchlight beams.
