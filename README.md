@@ -1,79 +1,66 @@
 # ASTROWORLD
 
-An animated **ASTROWORLD theme park** built for the Computer Graphics capstone. It recreates the album world: the giant brass head with its mouth open as the park entrance, the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the cover, and the starfield and teal coaster of the night artwork. Every course algorithm is implemented by hand in C++.
+ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-> **You are on branch `checkpoint-1`: Checkpoint 1 – Technical foundation (pure C++).** This README describes the project *as it stands at this stage*. Later stages live on later branches (see the [roadmap](#project-roadmap-and-branches)), and `main` has the latest work.
+This is branch `checkpoint-1`: Checkpoint 1. Later stages are on later branches, and `main` has the latest work.
 
-> **Just switched branches? Rebuild from scratch before running anything.** Git never touches
-> `build/` or `output/` (both are in `.gitignore`), so after `git checkout` they still hold the
-> programs and images from the last branch you built, including programs this branch doesn't have
-> (for example `astroworldGl` on Checkpoint 1). Running them shows work from another stage. Start clean:
->
-> ```bash
-> rm -rf build && cmake -B build && cmake --build build -j
-> ```
->
-> Images already in `output/` may also come from another branch: regenerate them rather than trusting them.
-> (Without CMake, use the single `g++` command under [Building and running](#building-and-running).)
+## Contents
 
-## This stage: Checkpoint 1 – Technical foundation (pure C++)
+1. [Checkpoint 1: technical foundation](#checkpoint-1-technical-foundation)
+2. [Building and running](#building-and-running)
+3. [Course concepts in the code](#course-concepts-in-the-code)
+4. [The rendering pipeline](#the-rendering-pipeline)
+5. [Project structure](#project-structure)
+6. [Coding conventions](#coding-conventions)
+7. [Presentation notes](#presentation-notes)
+8. [Limitations](#limitations)
 
-- Every CP1 algorithm written by hand in C++: DDA and Bresenham lines, midpoint circles and ellipses, Cohen–Sutherland clipping, Bézier curves and Catmull–Rom splines, scan-line and boundary fills, RGB/HSV/CMYK colour and 24 → 8-bit reduction.
-- Simplified park components built from those algorithms: the brass head, Ferris wheel, roller coaster, drop tower, carousel, props and lettering.
-- Output: still images written as PPM files. No window, no animation yet.
+---
 
-**Presenting this stage?** Follow the script in [docs/presentations/checkpoint1.md](docs/presentations/checkpoint1.md): what the stage asked for, what to say and show, and the file behind each piece of work.
+## Checkpoint 1: technical foundation
 
-**Run it** (after building):
+The first checkpoint asked for the techniques covered so far, written in pure C++ and used to build simplified versions of the project's components. Everything here is drawn by a software rasterizer written from scratch, with no graphics library, and saved as PPM images.
 
-```bash
-./build/astroworld                 # writes the PPM images into output/
-./tools/exportScreenshots.sh       # optional: PPM -> PNG
-```
-
-**What you should see:**
-
-| The park by day (album cover) | The park at night |
+| The park by day | The park at night |
 |---|---|
 | ![Day](docs/screenshots/astroworldDay.png) | ![Night](docs/screenshots/astroworldNight.png) |
 | ![Algorithm showcase](docs/screenshots/algorithmShowcase.png) | ![Colour showcase](docs/screenshots/colorShowcase.png) |
 
-*Bottom row: every algorithm on its own, labelled, and the colour-theory panels.*
+**Algorithms.**
+- Lines: DDA and Bresenham.
+- Circles and ellipses: the midpoint algorithm.
+- Clipping: Cohen–Sutherland.
+- Curves: cubic Bézier and Catmull–Rom splines.
+- Filling: an edge-table scan-line fill, and 4- and 8-connected boundary fill.
+- Colour: RGB, HSV and CMYK models, tints, shades and tones, and reduction from 24-bit to 8-bit colour with ordered dithering.
+- Supersampled anti-aliasing for the lettering.
 
----
+The two showcases above isolate each algorithm and each colour concept on its own panel.
 
-## Contents
+**The park.** The brass head, Ferris wheel, roller coaster, drop tower, carousel, rocket, big top, crowd and wordmark are self-contained, parameterised components built from those algorithms. A single value, `nightAmount`, moves the whole scene from the daytime album cover to the night artwork.
 
-1. [Project roadmap and branches](#project-roadmap-and-branches)
-2. [Building and running](#building-and-running)
-3. [Project structure](#project-structure)
-4. [Course concepts → where they live in the code](#course-concepts--where-they-live-in-the-code)
-5. [How the software renderer maps to the rendering pipeline](#how-the-software-renderer-maps-to-the-rendering-pipeline)
-6. [Coding conventions](#coding-conventions)
-7. [Checkpoint log](#checkpoint-log)
+| 8-bit (3-3-2) | 8-bit, dithered |
+|---|---|
+| ![8-bit](docs/screenshots/astroworldDay8Bit.png) | ![8-bit dithered](docs/screenshots/astroworldDay8BitDither.png) |
 
----
+**Next, for Checkpoint 2.**
+- Homogeneous `Matrix3` and `Matrix4` transformations.
+- Animating the components over time: turning the wheel and carousel, dropping the tower, running the coaster along its spline, and moving from day to night.
+- Exporting frames as video.
 
-## Project roadmap and branches
-
-Each checkpoint has its own branch, created from the previous one, so every stage can be checked out and run exactly as it was submitted.
-
-| Branch | Stage | Focus |
-|---|---|---|
-| **`checkpoint-1` ← you are here** | **CP1 – Technical foundation** | Course algorithms in pure C++, used to build simplified park components. Output: PPM images. |
-| `checkpoint-1-window` | CP1 (windowed variant) | The same renderer shown live in a window through a basic windowing library. |
-| `checkpoint-2` | **CP2 – Transformation & animation** | 2D/3D transforms with homogeneous matrices; rides animate; frames combined into a video. |
-| `checkpoint-3` | **CP3 – OpenGL integration** | Components ported to OpenGL (GLFW + GLAD); real-time camera and perspective projection. |
-| `prototype` | Prototype | All components combined into one interactive park. |
-| `final` | Final project | Phong lighting, textures, anti-aliasing, ray-traced still, polish. |
-
-*Rows below the one marked "you are here" describe the plan as it stood at this stage. What was actually built is on those branches and on `main`.*
+The components already expose `rotationAngle`, `seatY`, `trainDistance` and `nightAmount`, so animating them only means driving those values over time.
 
 ---
 
 ## Building and running
 
 **Requirements:** a C++17 compiler (g++ 9+ / clang 10+ / MSVC 2019+) and, optionally, CMake 3.16+. CP1 uses **no external libraries**. `ffmpeg` is only used to convert screenshots for this README.
+
+`build/` and `output/` are not tracked by git, so after switching branches they still hold the programs and images of the last branch you built. Rebuild from scratch on each branch:
+
+```bash
+rm -rf build && cmake -B build && cmake --build build -j
+```
 
 ### With CMake
 
@@ -83,7 +70,7 @@ cmake --build build
 ./build/astroworld
 ```
 
-### Without CMake (single command)
+### Without CMake
 
 ```bash
 g++ -std=c++17 -O2 -Wall -Wextra -Isrc $(find src -name '*.cpp') -o build/astroworld
@@ -102,7 +89,7 @@ Running `./build/astroworld [outputDirectory]` (default `output/`) writes:
 | `algorithmShowcase.ppm` | Every CP1 algorithm shown on its own, labelled |
 | `colorShowcase.ppm` | HSV, tints/shades/tones, RGB vs CMYK, colour depth, palette |
 
-PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extension. To regenerate the PNGs in `docs/screenshots/`:
+To regenerate the PNGs in `docs/screenshots/`:
 
 ```bash
 ./tools/exportScreenshots.sh
@@ -110,54 +97,7 @@ PPM files open in GIMP, most Linux image viewers, and VS Code with a PPM extensi
 
 ---
 
-## Project structure
-
-```
-src/
-├── main.cpp                    CP1 entry point: renders and saves all images
-├── core/
-│   ├── vec2.h                  2D vector maths, pi, rounding helper
-│   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
-│   ├── frameBuffer.h/.cpp      Pixel memory, spans, alpha blending, dithering, PPM output
-│   ├── coverageMask.h/.cpp     Off-screen stencil mask + supersampled (anti-aliased) compositing
-│   └── simpleRandom.h          Deterministic xorshift random generator
-├── raster/
-│   ├── rasterTypes.h           Plot/span callbacks: rasterization kept separate from shading
-│   ├── lines.h/.cpp            DDA and Bresenham lines
-│   ├── circles.h/.cpp          Midpoint circle (8-way) and midpoint ellipse (4-way)
-│   ├── clipping.h/.cpp         Cohen–Sutherland line clipping
-│   └── strokes.h/.cpp          Thick and tapered strokes (scan-line quads + circle caps)
-├── curves/
-│   ├── bezier.h/.cpp           Cubic Bézier (Bernstein) and any-degree de Casteljau
-│   └── spline.h/.cpp           Catmull–Rom splines (open and closed)
-├── fill/
-│   ├── scanLineFill.h/.cpp     Edge Table / Active Edge Table polygon fill (even-odd)
-│   └── boundaryFill.h/.cpp     4- and 8-connected boundary fill (explicit stack)
-├── text/
-│   ├── bitmapFont.h/.cpp       5×7 raster font for labels
-│   └── astroWordmark.h/.cpp    The ASTROWORLD logo: flared vector letters, globe O, ring O
-├── scene/
-│   ├── astroworldScene.h/.cpp  Composes everything into the park (painter's algorithm)
-│   ├── backdrop.h/.cpp         Day/night sky, clouds, stars, searchlights, skyline, fence, plaza
-│   ├── astroHead.h/.cpp        The brass head: dreads, closed eyes, nose, glowing mouth portal
-│   ├── brassShading.h          Matte-brass surface shader (faux lighting)
-│   ├── carnivalProps.h/.cpp    Rocket statue, big-top tent, park sign, bunting
-│   ├── ferrisWheel.h/.cpp      Ferris wheel
-│   ├── rollerCoaster.h/.cpp    Roller coaster track, supports and train
-│   ├── dropTower.h/.cpp        Drop tower
-│   ├── carousel.h/.cpp         Carousel
-│   └── foreground.h/.cpp       Crowd walking into the mouth, balloon vendor
-└── showcase/
-    ├── algorithmShowcase.h/.cpp  Labelled 4×2 grid of algorithm demos
-    └── colorShowcase.h/.cpp      Colour-theory demos
-tools/exportScreenshots.sh      PPM → PNG for documentation
-docs/screenshots/               Checkpoint screenshots
-docs/references/                Reference artwork the scene is matched against (local only, not committed)
-```
-
----
-
-## Course concepts → where they live in the code
+## Course concepts in the code
 
 ### Hardware and core fundamentals
 | Concept | Implementation |
@@ -211,7 +151,7 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## How the software renderer maps to the rendering pipeline
+## The rendering pipeline
 
 | Pipeline stage | In this project (CP1) |
 |---|---|
@@ -227,6 +167,57 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
+## Project structure
+
+<details><summary>Source tree</summary>
+
+```
+src/
+├── main.cpp                    CP1 entry point: renders and saves all images
+├── core/
+│   ├── vec2.h                  2D vector maths, pi, rounding helper
+│   ├── color.h/.cpp            RGB/HSV/CMYK conversions, tints/shades/tones, 8-bit reduction, palette
+│   ├── frameBuffer.h/.cpp      Pixel memory, spans, alpha blending, dithering, PPM output
+│   ├── coverageMask.h/.cpp     Off-screen stencil mask + supersampled (anti-aliased) compositing
+│   └── simpleRandom.h          Deterministic xorshift random generator
+├── raster/
+│   ├── rasterTypes.h           Plot/span callbacks: rasterization kept separate from shading
+│   ├── lines.h/.cpp            DDA and Bresenham lines
+│   ├── circles.h/.cpp          Midpoint circle (8-way) and midpoint ellipse (4-way)
+│   ├── clipping.h/.cpp         Cohen–Sutherland line clipping
+│   └── strokes.h/.cpp          Thick and tapered strokes (scan-line quads + circle caps)
+├── curves/
+│   ├── bezier.h/.cpp           Cubic Bézier (Bernstein) and any-degree de Casteljau
+│   └── spline.h/.cpp           Catmull–Rom splines (open and closed)
+├── fill/
+│   ├── scanLineFill.h/.cpp     Edge Table / Active Edge Table polygon fill (even-odd)
+│   └── boundaryFill.h/.cpp     4- and 8-connected boundary fill (explicit stack)
+├── text/
+│   ├── bitmapFont.h/.cpp       5×7 raster font for labels
+│   └── astroWordmark.h/.cpp    The ASTROWORLD logo: flared vector letters, globe O, ring O
+├── scene/
+│   ├── astroworldScene.h/.cpp  Composes everything into the park (painter's algorithm)
+│   ├── backdrop.h/.cpp         Day/night sky, clouds, stars, searchlights, skyline, fence, plaza
+│   ├── astroHead.h/.cpp        The brass head: dreads, closed eyes, nose, glowing mouth portal
+│   ├── brassShading.h          Matte-brass surface shader (faux lighting)
+│   ├── carnivalProps.h/.cpp    Rocket statue, big-top tent, park sign, bunting
+│   ├── ferrisWheel.h/.cpp      Ferris wheel
+│   ├── rollerCoaster.h/.cpp    Roller coaster track, supports and train
+│   ├── dropTower.h/.cpp        Drop tower
+│   ├── carousel.h/.cpp         Carousel
+│   └── foreground.h/.cpp       Crowd walking into the mouth, balloon vendor
+└── showcase/
+    ├── algorithmShowcase.h/.cpp  Labelled 4×2 grid of algorithm demos
+    └── colorShowcase.h/.cpp      Colour-theory demos
+tools/exportScreenshots.sh      PPM → PNG for documentation
+docs/screenshots/               Checkpoint screenshots
+docs/references/                Reference artwork the scene is matched against (local only, not committed)
+```
+
+</details>
+
+---
+
 ## Coding conventions
 
 - **camelCase** for variables, functions, members and file names (`fillPolygonScanLine`, `astroHead.cpp`). Types use UpperCamelCase (`FrameBuffer`, `RollerCoaster`).
@@ -237,34 +228,16 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Checkpoint log
+## Presentation notes
 
-### Checkpoint 1 – Technical foundation (pure C++)
+Speaker notes for this stage are in [docs/presentations/checkpoint1.md](docs/presentations/checkpoint1.md). They cover the brief, a script, and where each piece of work lives in the code.
 
-**What are we building?**
-An animated ASTROWORLD theme park that recreates the album world. The giant brass head (eyes closed, dreads arching over the crown) is both the centrepiece and the entrance: its open mouth on the ground glows, and visitors walk in. Around it are a Ferris wheel, a teal lattice roller coaster, a drop tower, a carousel, a rocket statue, a striped big top, bunting and a black palisade fence. The scene has a day mood (the cover) and a night mood (the starfield artwork), with the "Greetings from ASTROWORLD / Wish you were here" postcard logo above.
+---
 
-**What graphics concepts are used?**
-Frame buffer and raster vs. vector graphics, RGB/HSV/CMYK colour models, tints/shades/tones, 24 → 8-bit colour reduction, DDA, Bresenham, midpoint circle and ellipse, Cohen–Sutherland clipping, Bézier curves, Catmull–Rom splines, scan-line and boundary fill, painter's-algorithm layering, stencil masking and supersampling anti-aliasing. Details are in the [table above](#course-concepts--where-they-live-in-the-code).
+## Limitations
 
-**What has been completed?**
-- A software rasterizer written from scratch: every algorithm above, with no graphics libraries
-- Each park component as a self-contained, parameterised struct: `FerrisWheel`, `RollerCoaster`, `DropTower`, `Carousel`, `AstroHead`, plus props, backdrop and foreground
-- The ASTROWORLD logo matched to the reference artwork: flared waisted letters with teardrop counters, the Earth-smiley O, the concentric-ring O, and flat per-letter colours, drawn with anti-aliasing
-- Day and night renders controlled by one `nightAmount` value
-- An algorithm showcase and a colour showcase for the checkpoint demo
-- 24-bit, 8-bit and dithered 8-bit renders of the day scene
-
-| Algorithm showcase | Colour showcase |
-|---|---|
-| ![Algorithms](docs/screenshots/algorithmShowcase.png) | ![Colour](docs/screenshots/colorShowcase.png) |
-
-| 8-bit (3-3-2) | 8-bit dithered |
-|---|---|
-| ![8-bit](docs/screenshots/astroworldDay8Bit.png) | ![8-bit dither](docs/screenshots/astroworldDay8BitDither.png) |
-
-**What are we doing next? (CP2)**
-- A `Matrix3` / `Matrix4` class for homogeneous-coordinate translation, rotation and scaling
-- Rotate the Ferris wheel and carousel, drop the tower seats, run the coaster train along the spline by arc length, bob the horses, sway the dreads and bunting, walk the crowd into the mouth, sweep the searchlights, and run a day → night cycle with `nightAmount`
-- Render a numbered frame sequence and combine it into an MP4 with `ffmpeg`
-- The components already expose `rotationAngle`, `seatY`, `trainDistance` and `nightAmount`, so CP2 only has to drive them over time
+- Still images only: nothing moves yet.
+- The scene is a stack of 2D layers drawn with the painter's algorithm, so there is no real depth and only one fixed view.
+- Lighting is faked: the brass and the dreads use hand-built shading, not a lighting model.
+- Captions use a blocky 5×7 bitmap font.
+- Output is PPM, which most viewers need converting before display.
