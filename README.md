@@ -2,7 +2,7 @@
 
 ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-This is branch `checkpoint-4`: Checkpoint 4, the final project. Later stages are on later branches, and `main` has the latest work.
+This is branch `checkpoint-4`: Checkpoint 4. Later stages are on later branches, and `main` has the latest work.
 
 ## Contents
 
@@ -20,7 +20,7 @@ This is branch `checkpoint-4`: Checkpoint 4, the final project. Later stages are
 
 ## Checkpoint 4: ray tracing and path tracing
 
-The final stage adds a third renderer: a CPU ray tracer that draws the same 3D park as the OpenGL program, from the same `ParkScene`, with the same materials, textures, sky and animation time. It covers the last topics of the course: ray tracing, global illumination and anti-aliasing.
+Checkpoint 4 adds a third renderer: a CPU ray tracer that draws the same 3D park as the OpenGL program, from the same `ParkScene`, with the same materials, textures, sky and animation time. It covers the last topics of the course: ray tracing, global illumination and anti-aliasing.
 
 | Path traced, day | Path traced, night |
 |---|---|
@@ -328,7 +328,7 @@ To regenerate the PNGs in `docs/screenshots/`:
 ### Scene description (prototype)
 | Concept | Implementation |
 |---|---|
-| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the final-phase ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
+| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the Checkpoint 4 ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
 | Camera paths | The coaster ride camera follows the spline: eye at the front car, looking a few metres ahead along the track, banked with the car's up vector |
 
 ### Reusing earlier work in CP3

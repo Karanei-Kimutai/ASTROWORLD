@@ -1,6 +1,6 @@
 /**
  * @file rayMain.cpp
- * @brief Offline ray tracer for the ASTROWORLD park (final phase).
+ * @brief Offline ray tracer for the ASTROWORLD park (Checkpoint 4).
  *
  * Renders the same ParkFrame the OpenGL renderer draws, but by tracing rays on
  * the CPU: Whitted ray tracing (shadows + recursive reflections) or Monte-Carlo

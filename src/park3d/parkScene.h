@@ -6,7 +6,7 @@
  * material P". This is the classic scene-graph split between WHAT is in the
  * scene and HOW it is drawn:
  *   - the OpenGL renderer uploads each mesh once and issues one draw call per instance;
- *   - the ray tracer (final phase) transforms the same meshes into world-space
+ *   - the ray tracer (Checkpoint 4) transforms the same meshes into world-space
  *     triangles and traces rays through them.
  * Both therefore show exactly the same geometry, lighting and animation.
  */
