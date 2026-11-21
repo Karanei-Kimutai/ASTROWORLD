@@ -12,15 +12,15 @@ This is branch `main`: the latest work, the same as branch `blender` plus the vi
 
 1. [Taking a step further: Blender](#taking-a-step-further-blender)
 2. [Earlier stages](#earlier-stages)
-3. [What we learned](#what-we-learned)
-4. [Project report](#project-report)
-5. [Building and running](#building-and-running)
-6. [Course concepts in the code](#course-concepts-in-the-code)
-7. [The rendering pipeline](#the-rendering-pipeline)
-8. [Project structure](#project-structure)
-9. [Coding conventions](#coding-conventions)
-10. [Branch guide](#branch-guide)
-11. [Challenges and limitations](#challenges-and-limitations)
+3. [Project report](#project-report)
+4. [Building and running](#building-and-running)
+5. [Course concepts in the code](#course-concepts-in-the-code)
+6. [The rendering pipeline](#the-rendering-pipeline)
+7. [Project structure](#project-structure)
+8. [Coding conventions](#coding-conventions)
+9. [Branch guide](#branch-guide)
+10. [Challenges and limitations](#challenges-and-limitations)
+11. [What we learned](#what-we-learned)
 
 ---
 
@@ -119,68 +119,6 @@ Branch [`checkpoint-1`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/check
 The course's raster algorithms written by hand in C++ (lines, circles, ellipses, clipping, curves, fills and colour models) and used to draw the park as still images.
 
 ![The park by day](docs/screenshots/astroworldDay.png)
-
----
-
-## What we learned
-
-Across eight stages we went from placing single pixels by hand to driving a production renderer. These are the concepts we learned and implemented along the way, roughly in the order we met them. [Course concepts in the code](#course-concepts-in-the-code) maps each course topic to the exact code.
-
-### Rasterization and the frame buffer (Checkpoint 1)
-- The frame buffer as the CPU-side counterpart of video memory, and raster against vector graphics.
-- Line drawing with DDA and Bresenham's integer algorithm; circles and ellipses with the midpoint algorithm and its symmetry.
-- Cohen–Sutherland line clipping with region codes.
-- Parametric curves: Bézier curves and Catmull–Rom splines.
-- Area filling: the scan-line fill with an edge table and the even-odd rule, and 4- and 8-connected boundary fill.
-- Anti-aliasing by supersampling, and displaying our own frame buffer through SDL2 without letting it draw.
-
-### Colour (Checkpoint 1)
-- The RGB, HSV and CMYK colour models and conversions between them.
-- Tints, shades and tones, colour harmony, and interpolating colour through HSV space.
-- Reducing 24-bit colour to 8 bits (3-3-2) and hiding the banding with ordered dithering.
-
-### Transformations and animation (Checkpoint 2)
-- Homogeneous coordinates and 3×3 and 4×4 matrices for translation, rotation, scaling, shearing and reflection.
-- Rotating and scaling about a pivot, composite transformations, and why their order matters.
-- Transformation hierarchies, as in the Ferris wheel and its level gondolas.
-- Animation as a pure function of time, with easing curves, keyframe tracks and oscillators.
-- Physically based motion: the coaster's speed from conservation of energy, moved by arc length along a spline.
-
-### Real-time 3D on the GPU (Checkpoint 3 and the prototype)
-- The programmable OpenGL pipeline: loading GL functions ourselves, vertex buffers and vertex arrays, and GLSL shaders.
-- The model, view and projection matrices, `lookAt`, and the viewport transform.
-- Hidden-surface removal with the depth buffer in place of the painter's algorithm.
-- The Phong lighting model with point lights, and flat, Gouraud and Phong shading interpolation.
-- Perspective, orthographic multiview, isometric and oblique (cavalier and cabinet) projections, and one-, two- and three-point perspective.
-- Texture mapping, tiling and mipmapping, additive blending for transparent light, and multisample anti-aliasing.
-- Procedural modelling: building every mesh in code, with correct normals and the inverse-transpose for non-uniform scaling.
-- Separating the scene description from the renderer, so one park can be drawn by several renderers.
-
-### Ray tracing and global illumination (Checkpoint 4)
-- Whitted ray tracing: primary rays, shadow rays and mirror reflections.
-- Path tracing for global illumination, with Monte Carlo sampling, next-event estimation and Russian roulette.
-- Bounding volume hierarchies and Möller–Trumbore ray–triangle intersection.
-- Anti-aliasing by jittered supersampling, tone mapping, and multi-threaded rendering.
-- Why games rasterize and films ray trace, measured on our own park.
-
-### Real-time photorealism (taking a step further)
-- Physically based rendering with the Cook–Torrance model: distribution, geometry and Fresnel terms, and metallic–roughness materials.
-- Shadow mapping with an orthographic light camera, percentage-closer filtering and depth bias.
-- High-dynamic-range rendering in linear light, ACES filmic tone mapping, bloom and exposure.
-- GPU instancing to draw thousands of objects with a few hundred draw calls.
-- Sculpting a surface procedurally with smooth displacements, and simulating rides and crowds with real physics.
-
-### Production rendering (taking a step further)
-- Exporting a scene and its animation from our own engine and rebuilding it in Blender with Python.
-- A physical sky, volumetric lighting, motion blur, depth of field and filmic colour.
-- Hand sculpting in Blender to the constraints of our engine's walking routes.
-- A closed Catmull–Rom track, with the coaster's speed timed to loop with the film.
-
-### Engineering practice
-- Reusing one set of maths, curves, colours and timeline across four renderers.
-- Measuring before optimising: CPU against GPU, draw calls, and where the time in a frame really goes.
-- Streaming frames into ffmpeg instead of writing gigabytes of images, and scripting every view from the command line.
-- One branch per stage, with each submission tagged.
 
 ---
 
@@ -683,3 +621,214 @@ docs/references/                Reference artwork the scene is matched against (
 - The film is slow to make. At 16–34 s per 720p EEVEE frame, the 720-frame loop takes about 2½ hours, and Cycles is used only for single frames.
 - The real-time park runs at about 22–28 fps on an integrated GPU. The ray tracer takes about 13 s per Whitted frame and has no denoiser.
 - The Blender pipeline was built around Windows Blender driven from WSL. The whole project was developed and tested on WSL2 (Ubuntu 24.04) only.
+
+---
+
+## What we learned
+
+Across eight stages we went from placing single pixels by hand to driving a production renderer. These are the concepts we learned and implemented along the way. [Course concepts in the code](#course-concepts-in-the-code) maps each course topic to the code.
+
+### Raster graphics and the frame buffer
+
+- Raster graphics
+- Vector graphics
+- The frame buffer
+- Pixels and resolution
+- Image output (PPM)
+- Displaying a frame buffer in a window (SDL2)
+- CPU against GPU rendering
+
+### Line, circle and ellipse drawing
+
+- DDA line algorithm
+- Bresenham's line algorithm
+- Midpoint circle algorithm
+- Eight-way symmetry
+- Midpoint ellipse algorithm
+- Thick lines and stroke caps
+
+### Clipping
+
+- Line clipping
+- Cohen–Sutherland region codes
+- Trivial accept and reject
+
+### Curves
+
+- Parametric curves
+- Bézier curves
+- De Casteljau evaluation
+- Catmull–Rom splines
+- Closed splines
+- Arc-length parameterisation
+
+### Polygons and area filling
+
+- Convex, concave and self-intersecting polygons
+- Scan-line fill
+- Edge table and active edge table
+- Even-odd fill rule
+- Boundary fill
+- 4-connected and 8-connected filling
+
+### Colour
+
+- RGB colour model
+- HSV colour model
+- CMYK colour model
+- Colour model conversion
+- Tints, shades and tones
+- Colour harmony
+- Colour interpolation in HSV
+- 24-bit to 8-bit colour reduction (3-3-2)
+- Colour banding
+- Ordered (Bayer) dithering
+
+### Anti-aliasing
+
+- Aliasing
+- Supersampling (SSAA)
+- Jittered supersampling
+- Multisample anti-aliasing (MSAA)
+
+### Transformations
+
+- Homogeneous coordinates
+- Points and directions
+- Translation
+- Rotation
+- Scaling
+- Shearing
+- Reflection
+- Rotation about a pivot
+- Scaling about a fixed point
+- Composite transformations
+- Order of transformations
+- Hierarchical transformations
+- 3×3 matrices in 2D
+- 4×4 matrices in 3D
+- Normal transformation (inverse-transpose)
+
+### Animation
+
+- Time-based animation
+- Frames as a pure function of time
+- Keyframes
+- Easing curves
+- Oscillators
+- Walk cycles
+- Physically based motion
+- Conservation of energy
+- Pendulum motion
+- Circular motion and centripetal balance
+- Lissajous paths
+- Frame export and video encoding
+
+### Viewing and projection
+
+- The camera (view) transform
+- lookAt
+- Orbit camera
+- The viewport transform
+- Perspective projection
+- Centre of projection and the view frustum
+- Perspective divide
+- One-point perspective
+- Two-point perspective
+- Three-point perspective
+- Orthographic projection
+- Multiview (top and front) projection
+- Axonometric and isometric projection
+- Oblique projection
+- Cavalier projection
+- Cabinet projection
+
+### The OpenGL pipeline
+
+- The programmable graphics pipeline
+- OpenGL function loading
+- Vertex buffers, index buffers and vertex arrays
+- Vertex shaders
+- Fragment shaders
+- Model, view and projection matrices
+- Depth buffer (z-buffer)
+- Painter's algorithm
+- Off-screen frame buffers
+- Alpha and additive blending
+- Fog
+
+### Modelling
+
+- Procedural meshes
+- Surface normals
+- Swept tubes
+- Procedural sculpting by displacement
+- Separating the scene description from the renderer
+- Instancing
+
+### Lighting and shading
+
+- The Phong lighting model
+- Blinn-Phong highlights
+- Ambient, diffuse and specular light
+- Point lights and attenuation
+- Flat shading
+- Gouraud shading
+- Phong shading
+- Wireframe rendering
+- Physically based rendering
+- Cook–Torrance BRDF
+- Microfacet distribution, geometry and Fresnel terms
+- Metallic–roughness materials
+- Environment reflections
+- Linear-space lighting and gamma
+
+### Textures
+
+- Texture mapping
+- UV coordinates
+- Texture tiling (repeat)
+- Mipmapping
+- Trilinear filtering
+- Procedurally generated textures
+- Transparency recovered by difference matting
+
+### Shadows and HDR
+
+- Shadow mapping
+- Light-space orthographic projection
+- Percentage-closer filtering
+- Shadow acne and depth bias
+- High dynamic range (HDR)
+- Tone mapping (Reinhard and ACES)
+- Bloom
+- Exposure
+- Vignetting
+
+### Ray tracing and global illumination
+
+- Ray casting
+- Whitted ray tracing
+- Shadow rays
+- Mirror reflection
+- Ray–triangle intersection (Möller–Trumbore)
+- Bounding volume hierarchies
+- Global illumination
+- Path tracing
+- Monte Carlo integration
+- Next-event estimation
+- Russian roulette
+- Emissive light sources
+- Ray tracing through any projection
+- Multi-threaded rendering
+
+### Production rendering
+
+- Scene and animation export
+- Scripting Blender with Python
+- Physical sky
+- Volumetric lighting
+- Motion blur
+- Depth of field
+- Filmic colour management
+- Digital sculpting
