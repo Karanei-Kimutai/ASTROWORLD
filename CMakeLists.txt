@@ -5,7 +5,7 @@
 #   astroworld        CP1/CP2 software renderer: stills and animation frames as PPM (no dependencies)
 #   astroworldWindow  CP2 live player for the software renderer (needs SDL2; skipped if not found)
 #   astroworldGl      CP3+ real-time 3D park in OpenGL 3.3 core (needs GLFW; skipped if not found)
-#   astroworldRay     final phase: CPU ray tracer / path tracer of the same 3D park (no dependencies)
+#   astroworldRay     Checkpoint 4: CPU ray tracer / path tracer of the same 3D park (no dependencies)
 
 cmake_minimum_required(VERSION 3.16)
 project(ASTROWORLD LANGUAGES CXX)
@@ -105,7 +105,7 @@ else()
     message(STATUS "GLFW not found - skipping astroworldGl (install libglfw3-dev to build it)")
 endif()
 
-# Final phase: offline CPU ray tracer / path tracer for the 3D park (no external libraries, uses threads).
+# Checkpoint 4: offline CPU ray tracer / path tracer for the 3D park (no external libraries, uses threads).
 find_package(Threads REQUIRED)
 add_executable(astroworldRay
     src/rayMain.cpp

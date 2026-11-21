@@ -139,7 +139,7 @@ In plain words: **put everything together into one program that works, and works
 
 ### 3.7 Close (20 seconds)
 
-> "So the prototype is the whole project in one working program. A renderer-independent scene. Live flat, Gouraud and Phong shading. Every projection: perspective with one, two and three vanishing points, isometric, cavalier, cabinet and multiview. Mipmapped texture mapping, searchlights, and a coaster ride. Next, the final stage adds ray tracing and path tracing. Thank you."
+> "So the prototype is the whole project in one working program. A renderer-independent scene. Live flat, Gouraud and Phong shading. Every projection: perspective with one, two and three vanishing points, isometric, cavalier, cabinet and multiview. Mipmapped texture mapping, searchlights, and a coaster ride. Next, Checkpoint 4 adds ray tracing and path tracing. Thank you."
 
 ---
 
@@ -175,7 +175,7 @@ In plain words: **put everything together into one program that works, and works
 > Texture aliasing in the distance. Many texels fall into one screen pixel, and sampling just one causes shimmer. Mipmaps pre-average the texture at smaller sizes.
 
 **"Why separate the scene description from OpenGL?"**
-> So the same park can be drawn by any renderer. The final ray tracer reads exactly the same `ParkScene`, which guarantees the two images show the same thing.
+> So the same park can be drawn by any renderer. The Checkpoint 4 ray tracer reads exactly the same `ParkScene`, which guarantees the two images show the same thing.
 
 **GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/prototype
 

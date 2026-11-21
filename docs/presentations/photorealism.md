@@ -1,10 +1,10 @@
-# Presentation guide – Photorealism: a living, photoreal park (side project)
+# Presentation guide – Taking a step further: photorealism
 
 | | |
 |---|---|
 | **Branch** | [`photorealism`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/photorealism), built on top of `checkpoint-4` |
-| **Course stage** | Beyond the brief. It carries out the [final report's](checkpoint4.md) recommendations |
-| **Presentation questions it answers** | "What did you do after the final?" and "How would you take this further?" |
+| **Course stage** | Taking a step further. It carries out the [Checkpoint 4 report's](checkpoint4.md) recommendations |
+| **Presentation questions it answers** | "What did you do after Checkpoint 4?" and "How would you take this further?" |
 | **Speaking time** | about 8 minutes, plus questions |
 | **What you show** | The real-time OpenGL park, now photoreal: gold inflatable head, visitors walking through its mouth, new rides, real shadows, glow |
 
@@ -39,7 +39,7 @@ Have these images ready (in `docs/screenshots/`) as slides or a fallback:
 
 ## 2. Why this stage exists
 
-The [final report](checkpoint4.md) listed what didn't work and what we'd do next:
+The [Checkpoint 4 report](checkpoint4.md) listed what didn't work and what we'd do next:
 
 > *Shadow mapping in OpenGL · physically based materials and HDR in OpenGL · a sculpted head mesh with a real mouth opening.*
 
@@ -53,7 +53,7 @@ This branch does all of that. It also has a bigger goal: **make it look like a r
 
 **Do:** press `2` for night and `C` until **THE GATE**. Let it play.
 
-> "In the final report I said the 3D head looked blobby, the mouth was just a glowing panel, and OpenGL had no shadows. This branch fixes those. What you're looking at is still running in real time, on the same OpenGL code base. The head is now the gold inflatable from the album cover. It's the park's entrance, and visitors walk *through its mouth* into the park."
+> "In the Checkpoint 4 report I said the 3D head looked blobby, the mouth was just a glowing panel, and OpenGL had no shadows. This branch fixes those. What you're looking at is still running in real time, on the same OpenGL code base. The head is now the gold inflatable from the album cover. It's the park's entrance, and visitors walk *through its mouth* into the park."
 
 ### 3.2 Physically based shading (1½ minutes)
 
@@ -127,13 +127,13 @@ This branch does all of that. It also has a bigger goal: **make it look like a r
 
 ### 3.8 Close (20 seconds)
 
-> "So this branch turns the final report's 'what doesn't work' into 'what works': real-time shadows, physically based materials, HDR and bloom, and a sculpted walk-through head, all in a much bigger park that's alive. The next step, on the `blender` branch, takes this same park into Blender for film-quality rendering. Thank you."
+> "So this branch turns the Checkpoint 4 report's 'what doesn't work' into 'what works': real-time shadows, physically based materials, HDR and bloom, and a sculpted walk-through head, all in a much bigger park that's alive. The next step, on the `blender` branch, takes this same park into Blender for film-quality rendering. Thank you."
 
 ---
 
 ## 4. Goal → what we did → where
 
-| Goal (from the final report) | What we did | Where |
+| Goal (from the Checkpoint 4 report) | What we did | Where |
 |---|---|---|
 | Physically based materials | Cook–Torrance BRDF (GGX, Smith–Schlick, Schlick Fresnel) with metallic/roughness; sky/ground ambient and environment reflection | [src/glScene/shaders.h](../../src/glScene/shaders.h) |
 | Real-time shadows | 4096² orthographic sun shadow map, 3×3 PCF, polygon and normal offset | `ShadowMap` in [src/gl/framePipeline.cpp](../../src/gl/framePipeline.cpp), [src/glScene/shaders.h](../../src/glScene/shaders.h) |
@@ -181,4 +181,4 @@ This branch does all of that. It also has a bigger goal: **make it look like a r
 
 ## 7. The one-minute version
 
-> "The photorealism branch carries out the final report's recommendations in real time. Phong lighting becomes physically based Cook–Torrance shading with metallic and roughness, so the gold head reflects the sky. A sun shadow map gives real shadows. Lighting is computed in HDR, then ACES tone mapped with bloom around bright lights. The head is a single sculpted inflatable with a real walk-through mouth. And the park is much bigger: a wave swinger obeying tan θ = ω²r/g, a pendulum pirate ship, teacups and bumper cars, about 140 visitors walking in through the mouth, and lamp-lit nights. Instancing keeps it running at over 20 frames per second."
+> "The photorealism branch carries out the Checkpoint 4 report's recommendations in real time. Phong lighting becomes physically based Cook–Torrance shading with metallic and roughness, so the gold head reflects the sky. A sun shadow map gives real shadows. Lighting is computed in HDR, then ACES tone mapped with bloom around bright lights. The head is a single sculpted inflatable with a real walk-through mouth. And the park is much bigger: a wave swinger obeying tan θ = ω²r/g, a pendulum pirate ship, teacups and bumper cars, about 140 visitors walking in through the mouth, and lamp-lit nights. Instancing keeps it running at over 20 frames per second."
