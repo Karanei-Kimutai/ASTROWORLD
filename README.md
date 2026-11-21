@@ -13,7 +13,7 @@ This is branch `prototype`: the prototype. Later stages are on later branches, a
 5. [The rendering pipeline](#the-rendering-pipeline)
 6. [Project structure](#project-structure)
 7. [Coding conventions](#coding-conventions)
-8. [Presentation notes](#presentation-notes)
+8. [Branch guide](#branch-guide)
 9. [Limitations](#limitations)
 
 ---
@@ -457,9 +457,9 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Presentation notes
+## Branch guide
 
-Speaker notes for this stage are in [docs/presentations/prototype.md](docs/presentations/prototype.md). They cover the brief, a script, and where each piece of work lives in the code.
+[docs/guides/prototype.md](docs/guides/prototype.md) describes this stage: what it set out to do, what we built and how it works, with links to the code.
 
 ---
 
