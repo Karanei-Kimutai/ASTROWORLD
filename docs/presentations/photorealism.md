@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Branch** | [`photorealism`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/photorealism), built on top of `final` |
-| **Course stage** | Beyond the brief. It carries out the [final report's](final.md) recommendations |
+| **Branch** | [`photorealism`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/photorealism), built on top of `checkpoint-4` |
+| **Course stage** | Beyond the brief. It carries out the [final report's](checkpoint4.md) recommendations |
 | **Presentation questions it answers** | "What did you do after the final?" and "How would you take this further?" |
 | **Speaking time** | about 8 minutes, plus questions |
 | **What you show** | The real-time OpenGL park, now photoreal: gold inflatable head, visitors walking through its mouth, new rides, real shadows, glow |
@@ -39,7 +39,7 @@ Have these images ready (in `docs/screenshots/`) as slides or a fallback:
 
 ## 2. Why this stage exists
 
-The [final report](final.md) listed what didn't work and what we'd do next:
+The [final report](checkpoint4.md) listed what didn't work and what we'd do next:
 
 > *Shadow mapping in OpenGL · physically based materials and HDR in OpenGL · a sculpted head mesh with a real mouth opening.*
 
