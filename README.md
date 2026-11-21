@@ -19,8 +19,8 @@ This is branch `main`: the latest work, the same as branch `blender` plus the vi
 7. [Project structure](#project-structure)
 8. [Coding conventions](#coding-conventions)
 9. [Branch guide](#branch-guide)
-10. [Challenges and limitations](#challenges-and-limitations)
-11. [What we learned](#what-we-learned)
+10. [What we learned](#what-we-learned)
+11. [Challenges and limitations](#challenges-and-limitations)
 
 ---
 
@@ -598,32 +598,6 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Challenges and limitations
-
-### Challenges
-
-- **No graphics library to lean on.** In Checkpoints 1 and 2 every pixel came from our own code, so every algorithm had to be right before anything appeared. The 2D renderer also had to be fast enough to animate: caching the sky and ground colours per row took a frame from about 100 ms to about 60 ms.
-- **Seeing the GPU from WSL.** GLAD wasn't available offline, so we wrote our own OpenGL function loader. Under WSL, Mesa quietly ran OpenGL on the CPU, so the program had to detect and select the driver that reaches the real graphics card.
-- **Mixing the 2D renderer into the 3D scene.** Our software-rendered images have no transparency, so we drew each one on black and on white and recovered the transparency from the difference.
-- **Keeping the renderers identical.** For the ray tracer to draw exactly the same park as OpenGL, the scene had to be separated from the renderer, the sky shader had to be ported to C++, and the textures had to be generated once and shared.
-- **Making ray tracing practical.** Testing every ray against every triangle was far too slow; a bounding volume hierarchy and multi-threading brought a frame down to seconds. The path tracer still needs minutes per image to clear its noise.
-- **Shadows without artefacts.** Both the ray tracer and shadow mapping produced "shadow acne", where a surface shadows itself, until the comparisons were offset slightly.
-- **Real-time performance at scale.** With about 1,400 objects per frame, the photoreal park was limited by draw calls until instancing cut them from about 2,750 to about 300.
-- **Believable motion.** Visitors' feet slid until their legs were driven by distance walked rather than time. The wave swinger's angle depends on its own radius, so it is found by iterating until it settles.
-- **The head.** A head built from separate rounded shapes looked blobby, so it was rebuilt as one sculpted surface, and finally sculpted by hand in Blender around the visitors' path through the mouth.
-- **The Blender pipeline.** Smoothing each of about 500 body parts separately took a frame to 150 s, so the shared meshes are smoothed once instead. Haze across the whole world turned the night black, so it is limited to the beams and the mouth. Reading data from Linux into Windows Blender was slow, so it is read in one go.
-- **The roller coaster.** Lifted from the 2D side view, the track rose out of the ground and ended in mid-air. It was rebuilt as a closed circuit whose lap takes exactly the length of the animation.
-
-### Limitations
-
-- The visitors are still simple primitive figures rather than rigged, animated characters.
-- The hand-sculpted head exists only in the Blender render; the OpenGL park and the ray tracer use the procedurally sculpted head.
-- The film is slow to make. At 16–34 s per 720p EEVEE frame, the 720-frame loop takes about 2½ hours, and Cycles is used only for single frames.
-- The real-time park runs at about 22–28 fps on an integrated GPU. The ray tracer takes about 13 s per Whitted frame and has no denoiser.
-- The Blender pipeline was built around Windows Blender driven from WSL. The whole project was developed and tested on WSL2 (Ubuntu 24.04) only.
-
----
-
 ## What we learned
 
 Across eight stages we went from placing single pixels by hand to driving a production renderer. These are the concepts we learned and implemented along the way. [Course concepts in the code](#course-concepts-in-the-code) maps each course topic to the code.
@@ -832,3 +806,29 @@ Across eight stages we went from placing single pixels by hand to driving a prod
 - Depth of field
 - Filmic colour management
 - Digital sculpting
+
+---
+
+## Challenges and limitations
+
+### Challenges
+
+- **No graphics library to lean on.** In Checkpoints 1 and 2 every pixel came from our own code, so every algorithm had to be right before anything appeared. The 2D renderer also had to be fast enough to animate: caching the sky and ground colours per row took a frame from about 100 ms to about 60 ms.
+- **Seeing the GPU from WSL.** GLAD wasn't available offline, so we wrote our own OpenGL function loader. Under WSL, Mesa quietly ran OpenGL on the CPU, so the program had to detect and select the driver that reaches the real graphics card.
+- **Mixing the 2D renderer into the 3D scene.** Our software-rendered images have no transparency, so we drew each one on black and on white and recovered the transparency from the difference.
+- **Keeping the renderers identical.** For the ray tracer to draw exactly the same park as OpenGL, the scene had to be separated from the renderer, the sky shader had to be ported to C++, and the textures had to be generated once and shared.
+- **Making ray tracing practical.** Testing every ray against every triangle was far too slow; a bounding volume hierarchy and multi-threading brought a frame down to seconds. The path tracer still needs minutes per image to clear its noise.
+- **Shadows without artefacts.** Both the ray tracer and shadow mapping produced "shadow acne", where a surface shadows itself, until the comparisons were offset slightly.
+- **Real-time performance at scale.** With about 1,400 objects per frame, the photoreal park was limited by draw calls until instancing cut them from about 2,750 to about 300.
+- **Believable motion.** Visitors' feet slid until their legs were driven by distance walked rather than time. The wave swinger's angle depends on its own radius, so it is found by iterating until it settles.
+- **The head.** A head built from separate rounded shapes looked blobby, so it was rebuilt as one sculpted surface, and finally sculpted by hand in Blender around the visitors' path through the mouth.
+- **The Blender pipeline.** Smoothing each of about 500 body parts separately took a frame to 150 s, so the shared meshes are smoothed once instead. Haze across the whole world turned the night black, so it is limited to the beams and the mouth. Reading data from Linux into Windows Blender was slow, so it is read in one go.
+- **The roller coaster.** Lifted from the 2D side view, the track rose out of the ground and ended in mid-air. It was rebuilt as a closed circuit whose lap takes exactly the length of the animation.
+
+### Limitations
+
+- The visitors are still simple primitive figures rather than rigged, animated characters.
+- The hand-sculpted head exists only in the Blender render; the OpenGL park and the ray tracer use the procedurally sculpted head.
+- The film is slow to make. At 16–34 s per 720p EEVEE frame, the 720-frame loop takes about 2½ hours, and Cycles is used only for single frames.
+- The real-time park runs at about 22–28 fps on an integrated GPU. The ray tracer takes about 13 s per Whitted frame and has no denoiser.
+- The Blender pipeline was built around Windows Blender driven from WSL. The whole project was developed and tested on WSL2 (Ubuntu 24.04) only.
