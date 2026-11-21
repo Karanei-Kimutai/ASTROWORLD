@@ -12,14 +12,15 @@ This is branch `main`: the latest work, the same as branch `blender` plus the vi
 
 1. [Taking a step further: Blender](#taking-a-step-further-blender)
 2. [Earlier stages](#earlier-stages)
-3. [Project report](#project-report)
-4. [Building and running](#building-and-running)
-5. [Course concepts in the code](#course-concepts-in-the-code)
-6. [The rendering pipeline](#the-rendering-pipeline)
-7. [Project structure](#project-structure)
-8. [Coding conventions](#coding-conventions)
-9. [Branch guide](#branch-guide)
-10. [Limitations](#limitations)
+3. [What we learned](#what-we-learned)
+4. [Project report](#project-report)
+5. [Building and running](#building-and-running)
+6. [Course concepts in the code](#course-concepts-in-the-code)
+7. [The rendering pipeline](#the-rendering-pipeline)
+8. [Project structure](#project-structure)
+9. [Coding conventions](#coding-conventions)
+10. [Branch guide](#branch-guide)
+11. [Challenges and limitations](#challenges-and-limitations)
 
 ---
 
@@ -118,6 +119,68 @@ Branch [`checkpoint-1`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/check
 The course's raster algorithms written by hand in C++ (lines, circles, ellipses, clipping, curves, fills and colour models) and used to draw the park as still images.
 
 ![The park by day](docs/screenshots/astroworldDay.png)
+
+---
+
+## What we learned
+
+Across eight stages we went from placing single pixels by hand to driving a production renderer. These are the concepts we learned and implemented along the way, roughly in the order we met them. [Course concepts in the code](#course-concepts-in-the-code) maps each course topic to the exact code.
+
+### Rasterization and the frame buffer (Checkpoint 1)
+- The frame buffer as the CPU-side counterpart of video memory, and raster against vector graphics.
+- Line drawing with DDA and Bresenham's integer algorithm; circles and ellipses with the midpoint algorithm and its symmetry.
+- Cohen–Sutherland line clipping with region codes.
+- Parametric curves: Bézier curves and Catmull–Rom splines.
+- Area filling: the scan-line fill with an edge table and the even-odd rule, and 4- and 8-connected boundary fill.
+- Anti-aliasing by supersampling, and displaying our own frame buffer through SDL2 without letting it draw.
+
+### Colour (Checkpoint 1)
+- The RGB, HSV and CMYK colour models and conversions between them.
+- Tints, shades and tones, colour harmony, and interpolating colour through HSV space.
+- Reducing 24-bit colour to 8 bits (3-3-2) and hiding the banding with ordered dithering.
+
+### Transformations and animation (Checkpoint 2)
+- Homogeneous coordinates and 3×3 and 4×4 matrices for translation, rotation, scaling, shearing and reflection.
+- Rotating and scaling about a pivot, composite transformations, and why their order matters.
+- Transformation hierarchies, as in the Ferris wheel and its level gondolas.
+- Animation as a pure function of time, with easing curves, keyframe tracks and oscillators.
+- Physically based motion: the coaster's speed from conservation of energy, moved by arc length along a spline.
+
+### Real-time 3D on the GPU (Checkpoint 3 and the prototype)
+- The programmable OpenGL pipeline: loading GL functions ourselves, vertex buffers and vertex arrays, and GLSL shaders.
+- The model, view and projection matrices, `lookAt`, and the viewport transform.
+- Hidden-surface removal with the depth buffer in place of the painter's algorithm.
+- The Phong lighting model with point lights, and flat, Gouraud and Phong shading interpolation.
+- Perspective, orthographic multiview, isometric and oblique (cavalier and cabinet) projections, and one-, two- and three-point perspective.
+- Texture mapping, tiling and mipmapping, additive blending for transparent light, and multisample anti-aliasing.
+- Procedural modelling: building every mesh in code, with correct normals and the inverse-transpose for non-uniform scaling.
+- Separating the scene description from the renderer, so one park can be drawn by several renderers.
+
+### Ray tracing and global illumination (Checkpoint 4)
+- Whitted ray tracing: primary rays, shadow rays and mirror reflections.
+- Path tracing for global illumination, with Monte Carlo sampling, next-event estimation and Russian roulette.
+- Bounding volume hierarchies and Möller–Trumbore ray–triangle intersection.
+- Anti-aliasing by jittered supersampling, tone mapping, and multi-threaded rendering.
+- Why games rasterize and films ray trace, measured on our own park.
+
+### Real-time photorealism (taking a step further)
+- Physically based rendering with the Cook–Torrance model: distribution, geometry and Fresnel terms, and metallic–roughness materials.
+- Shadow mapping with an orthographic light camera, percentage-closer filtering and depth bias.
+- High-dynamic-range rendering in linear light, ACES filmic tone mapping, bloom and exposure.
+- GPU instancing to draw thousands of objects with a few hundred draw calls.
+- Sculpting a surface procedurally with smooth displacements, and simulating rides and crowds with real physics.
+
+### Production rendering (taking a step further)
+- Exporting a scene and its animation from our own engine and rebuilding it in Blender with Python.
+- A physical sky, volumetric lighting, motion blur, depth of field and filmic colour.
+- Hand sculpting in Blender to the constraints of our engine's walking routes.
+- A closed Catmull–Rom track, with the coaster's speed timed to loop with the film.
+
+### Engineering practice
+- Reusing one set of maths, curves, colours and timeline across four renderers.
+- Measuring before optimising: CPU against GPU, draw calls, and where the time in a frame really goes.
+- Streaming frames into ffmpeg instead of writing gigabytes of images, and scripting every view from the command line.
+- One branch per stage, with each submission tagged.
 
 ---
 
@@ -597,7 +660,23 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Limitations
+## Challenges and limitations
+
+### Challenges
+
+- **No graphics library to lean on.** In Checkpoints 1 and 2 every pixel came from our own code, so every algorithm had to be right before anything appeared. The 2D renderer also had to be fast enough to animate: caching the sky and ground colours per row took a frame from about 100 ms to about 60 ms.
+- **Seeing the GPU from WSL.** GLAD wasn't available offline, so we wrote our own OpenGL function loader. Under WSL, Mesa quietly ran OpenGL on the CPU, so the program had to detect and select the driver that reaches the real graphics card.
+- **Mixing the 2D renderer into the 3D scene.** Our software-rendered images have no transparency, so we drew each one on black and on white and recovered the transparency from the difference.
+- **Keeping the renderers identical.** For the ray tracer to draw exactly the same park as OpenGL, the scene had to be separated from the renderer, the sky shader had to be ported to C++, and the textures had to be generated once and shared.
+- **Making ray tracing practical.** Testing every ray against every triangle was far too slow; a bounding volume hierarchy and multi-threading brought a frame down to seconds. The path tracer still needs minutes per image to clear its noise.
+- **Shadows without artefacts.** Both the ray tracer and shadow mapping produced "shadow acne", where a surface shadows itself, until the comparisons were offset slightly.
+- **Real-time performance at scale.** With about 1,400 objects per frame, the photoreal park was limited by draw calls until instancing cut them from about 2,750 to about 300.
+- **Believable motion.** Visitors' feet slid until their legs were driven by distance walked rather than time. The wave swinger's angle depends on its own radius, so it is found by iterating until it settles.
+- **The head.** A head built from separate rounded shapes looked blobby, so it was rebuilt as one sculpted surface, and finally sculpted by hand in Blender around the visitors' path through the mouth.
+- **The Blender pipeline.** Smoothing each of about 500 body parts separately took a frame to 150 s, so the shared meshes are smoothed once instead. Haze across the whole world turned the night black, so it is limited to the beams and the mouth. Reading data from Linux into Windows Blender was slow, so it is read in one go.
+- **The roller coaster.** Lifted from the 2D side view, the track rose out of the ground and ended in mid-air. It was rebuilt as a closed circuit whose lap takes exactly the length of the animation.
+
+### Limitations
 
 - The visitors are still simple primitive figures rather than rigged, animated characters.
 - The hand-sculpted head exists only in the Blender render; the OpenGL park and the ray tracer use the procedurally sculpted head.
