@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Branch** | [`final`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/final) (exact submitted state: tag `submitted/final`) |
+| **Branch** | [`checkpoint-4`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4) (exact submitted state: tag `submitted/checkpoint-4`) |
 | **Course stage** | *Final — refine and complete the project* |
 | **Presentation questions it answers** | **Checkpoint 4:** (1) final demonstration, (2) what works, (3) what doesn't, (4) final changes / recommendations |
 | **Speaking time** | about 10 minutes, plus questions |
@@ -13,7 +13,7 @@
 ## 1. Before you present
 
 ```bash
-git checkout final
+git checkout checkpoint-4
 rm -rf build && cmake -B build && cmake --build build -j
 ```
 
@@ -175,8 +175,8 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 | What was asked / needed | What we did | Where |
 |---|---|---|
 | **Refine and complete** | Three finished renderers of one park, plus the final report | [src/main.cpp](../../src/main.cpp), [src/windowMain.cpp](../../src/windowMain.cpp), [src/glMain.cpp](../../src/glMain.cpp), [src/rayMain.cpp](../../src/rayMain.cpp) |
-| **CP4: final demonstration** | The 5-minute walkthrough above (also in the README) | [README.md](../../README.md), section *Checkpoint 4 – Final demonstration* |
-| **CP4: what works / what doesn't / recommendations** | Written up honestly | [README.md](../../README.md), sections *What works*, *What doesn't*, *Final changes / recommendations* |
+| **CP4: final demonstration** | The walkthrough above; the up-to-date version is in the project report | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report* |
+| **CP4: what works / what doesn't / recommendations** | Written up honestly; this branch's limitations close its README | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report*; [this branch's README](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/README.md#limitations), section *Limitations* |
 | Ray tracing (Whitted): primary, shadow and reflection rays | `traceWhitted`: recursive mirror reflections, shadow rays, fog | [src/raytrace/rayTracer.cpp](../../src/raytrace/rayTracer.cpp) |
 | Global illumination | `tracePath`: cosine-weighted diffuse bounces, next-event estimation, Russian roulette, emission | [src/raytrace/rayTracer.cpp](../../src/raytrace/rayTracer.cpp) |
 | Ray–object intersection | Möller–Trumbore ray–triangle test, ray–box slab test | `intersectTriangle`, `rayHitsBox` in [src/raytrace/rayGeometry.cpp](../../src/raytrace/rayGeometry.cpp) |
@@ -221,7 +221,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 **"Why doesn't the ray-traced image have the searchlight beams?"**
 > They're a blending trick in OpenGL. The ray tracer would need volumetric scattering, which is listed under what doesn't work.
 
-**GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/final
+**GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4
 
 ---
 
