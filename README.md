@@ -2,11 +2,11 @@
 
 ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-This is branch `blender`: the latest work, taking the project a step further after Checkpoint 4. `main` has the same work plus the video of the whole journey. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
+This is branch `main`: the latest work, the same as branch `blender` plus the video of the whole journey. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
 
-[![Watch the Blender film](docs/media/blenderThumbnail.png)](docs/media/astroworldBlender.mp4)
+[![Watch the journey from Checkpoint 1 to Blender](docs/media/journeyThumbnail.png)](docs/media/astroworldJourney.mp4)
 
-*The park over one 30-second day, exported from our engine and rendered in Blender.*
+*The journey in two minutes: every stage, filmed with that stage's own code.*
 
 ## Contents
 
