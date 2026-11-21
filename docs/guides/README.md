@@ -1,6 +1,6 @@
 # Branch guides
 
-One guide for each stage of ASTROWORLD. Each one describes what the stage set out to do, what we built and how it works, and ends with links to the code on that stage's branch.
+One guide for each stage of ASTROWORLD. Each one opens with a one-paragraph summary, then describes in detail what the stage set out to do, what we built and how it works, and ends with links to the code on that stage's branch.
 
 | Stage | Guide | Branch |
 |---|---|---|

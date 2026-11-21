@@ -1,5 +1,11 @@
 # ASTROWORLD: Checkpoint 1, technical foundation
 
+## Summary
+
+Checkpoint 1 laid the technical foundation of ASTROWORLD, a theme park based on the album art of Travis Scott's *Astroworld*, drawn entirely by a software renderer we wrote from scratch in C++ with no graphics library. Every pixel is written into our own frame buffer and saved as an image. We implemented the course's raster algorithms and used them to build the park: DDA and Bresenham lines, midpoint circles and ellipses, Cohen–Sutherland clipping, Bézier curves and Catmull–Rom splines, and scan-line and boundary fills. We also covered colour, with the RGB, HSV and CMYK models, tints, shades and tones, an HSV day-to-night sky blend, and 8-bit colour reduction with ordered dithering. The logo contrasts raster and vector graphics and uses supersampling anti-aliasing. Built as separate, adjustable components with showcase images for every technique, Checkpoint 1 produced a complete still image of the park and the building blocks that every later stage reused.
+
+## In detail
+
 Checkpoint 1 is where ASTROWORLD began. The task was to take the graphics techniques covered in the course so far, implement them in pure C++, and use them to build simplified versions of the components our project would need.
 
 We decided to build a theme park based on the album art of Travis Scott's *Astroworld*. The giant golden head is the entrance, with its open, glowing mouth as the gate, and around it sit a Ferris wheel, a roller coaster, a drop tower, a carousel, a rocket statue, a striped big top and the "Greetings from ASTROWORLD" postcard lettering. The scene has two moods: the blue-sky carnival of the album cover by day, and the starfield of the night artwork.
