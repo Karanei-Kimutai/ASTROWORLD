@@ -1,5 +1,11 @@
 # ASTROWORLD: Prototype, integration
 
+## Summary
+
+The Prototype stage brought together the separate components developed in Checkpoints 1, 2 and 3 into one functional, interactive 3D version of ASTROWORLD. A major part of this stage was introducing ParkScene, a shared scene description that separates the park's geometry, materials, transformations and lighting from the actual rendering process, allowing both the OpenGL renderer and ray tracer to work with the same environment. We also implemented the different shading techniques (Flat, Gouraud and Phong), projection types (including perspective, isometric and oblique), texture mapping and mipmapping. Additional features included textured surfaces created using our original 2D renderer, night-time searchlights, and a first-person roller coaster experience driven by the physics developed in Checkpoint 2. Overall, the Prototype established the structure that allowed us to bring all our earlier work together while demonstrating the remaining computer graphics concepts in one working program.
+
+## In detail
+
 The Prototype stage is where we brought all the different parts of the project together into one working, interactive 3D program.
 
 Before this stage, the project existed as three separate checkpoints. In Checkpoint 1, we built a 2D renderer using our own C++ code to draw everything, from lines and circles to curves and filled shapes. Checkpoint 2 introduced transformations and animation, bringing the park to life through a 30-second day-to-night cycle. Then, in Checkpoint 3, we rebuilt the park in 3D using OpenGL, with our own models and shaders. The main goal of the Prototype was to combine all these components into one functional program, while also demonstrating the remaining graphics concepts from the course.
