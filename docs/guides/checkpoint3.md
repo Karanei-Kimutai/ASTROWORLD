@@ -1,5 +1,11 @@
 # ASTROWORLD: Checkpoint 3, OpenGL integration
 
+## Summary
+
+Checkpoint 3 rebuilt ASTROWORLD as a real-time 3D scene on the graphics card using OpenGL 3.3 core, with GLFW for the window and our own function loader in place of GLAD. Models are built in code by our mesh builder and uploaded as vertex and index buffers, and our own GLSL shaders place them with model, view and projection matrices and light them with the Blinn-Phong model, including a point light glowing in the head's mouth. A depth buffer, 4× multisample anti-aliasing, a procedural sky and fog complete the image, and an orbit camera built with `lookAt` explores it from four viewpoints. The 3D park reuses our matrices, splines and a shared animation timeline, so it moves exactly like the 2D version, and our software renderer still draws the overlay images. It runs at about 83 frames per second on the graphics card, compared with about 14 when the same program is forced onto the processor.
+
+## In detail
+
 Checkpoint 3 is where ASTROWORLD moved from the processor to the graphics card. The task was to bring an OpenGL library into the project, so we rebuilt the park as a real-time 3D scene that you can move around in, while keeping everything we had built in the first two checkpoints.
 
 By the end of Checkpoint 2 the park was fully animated, but our software renderer could only draw it at about 15 to 20 frames per second, and it was still a flat 2D picture. OpenGL lets the graphics card do the drawing. We used GLFW to open the window and create the OpenGL context, and targeted OpenGL 3.3 core, the modern version of the API in which everything goes through shaders. Normally a project would use a library such as GLAD to look up OpenGL's functions in the graphics driver, but it wasn't available to us offline, so we wrote our own loader that finds each function at runtime, which is exactly the job GLAD does.

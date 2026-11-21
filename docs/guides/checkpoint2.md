@@ -1,5 +1,11 @@
 # ASTROWORLD: Checkpoint 2, transformation and animation
 
+## Summary
+
+Checkpoint 2 brought the park to life with transformations and animation, still drawn by our own software renderer. We built 3×3 and 4×4 matrix classes using homogeneous coordinates to translate, rotate, scale, shear and reflect shapes, including rotation and scaling about a pivot, and showed why the order of transformations matters. The Ferris wheel became a transformation hierarchy with level gondolas, and the carousel's horses were placed in 3D and drawn back to front. Every frame is a pure function of time within a 30-second loop that moves from day through dusk and night to dawn, using easing curves and keyframes, with the roller coaster's speed coming from conservation of energy and the smaller movements from oscillators. The animation plays in the window or streams straight into ffmpeg as a video, and its limit of about 15 to 20 frames per second on the CPU is what led us to OpenGL.
+
+## In detail
+
 Checkpoint 2 is where the park came to life. The task was to implement transformations and animation, still in pure C++, so we kept the software renderer from Checkpoint 1 and taught every part of the park to move.
 
 The foundation for this was a small matrix library. Transformations such as moving, rotating and scaling a shape can each be written as a matrix, and by using homogeneous coordinates we can treat all of them the same way. A 2D point becomes three numbers, (x, y, 1), and that extra one is what allows a translation to be written as a matrix multiplication just like a rotation. We built a `Matrix3` class for 2D transformations and a `Matrix4` class for 3D ones, covering translation, rotation, scaling, shearing and reflection. Because they are all matrices, any sequence of transformations can be combined into one.
