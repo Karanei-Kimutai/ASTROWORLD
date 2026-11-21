@@ -1,10 +1,10 @@
 # Presentation guide – Checkpoint 4: the final project
 
-> This guide describes the `final` stage. Its file links open that branch on GitHub, because some files moved or changed in later stages.
+> This guide describes the `checkpoint-4` stage. Its file links open that branch on GitHub, because some files moved or changed in later stages.
 
 | | |
 |---|---|
-| **Branch** | [`final`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/final) (exact submitted state: tag `submitted/final`) |
+| **Branch** | [`checkpoint-4`](https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4) (exact submitted state: tag `submitted/checkpoint-4`) |
 | **Course stage** | *Final — refine and complete the project* |
 | **Presentation questions it answers** | **Checkpoint 4:** (1) final demonstration, (2) what works, (3) what doesn't, (4) final changes / recommendations |
 | **Speaking time** | about 10 minutes, plus questions |
@@ -15,7 +15,7 @@
 ## 1. Before you present
 
 ```bash
-git checkout final
+git checkout checkpoint-4
 rm -rf build && cmake -B build && cmake --build build -j
 ```
 
@@ -176,19 +176,19 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 | What was asked / needed | What we did | Where |
 |---|---|---|
-| **Refine and complete** | Three finished renderers of one park, plus the final report | [src/main.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/main.cpp), [src/windowMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/windowMain.cpp), [src/glMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/glMain.cpp), [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/rayMain.cpp) |
-| **CP4: final demonstration** | The 5-minute walkthrough above (also in the README) | [README.md](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/README.md), section *Checkpoint 4 – Final demonstration* |
-| **CP4: what works / what doesn't / recommendations** | Written up honestly | [README.md](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/README.md), sections *What works*, *What doesn't*, *Final changes / recommendations* |
-| Ray tracing (Whitted): primary, shadow and reflection rays | `traceWhitted`: recursive mirror reflections, shadow rays, fog | [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) |
-| Global illumination | `tracePath`: cosine-weighted diffuse bounces, next-event estimation, Russian roulette, emission | [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) |
-| Ray–object intersection | Möller–Trumbore ray–triangle test, ray–box slab test | `intersectTriangle`, `rayHitsBox` in [src/raytrace/rayGeometry.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayGeometry.cpp) |
-| Making it fast enough | Median-split BVH; all CPU cores share rows of the image | `RayScene::build` / `buildNode` / `traverse` in [src/raytrace/rayGeometry.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayGeometry.cpp); `rayTraceFrame` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) |
-| Anti-aliasing | Stratified, jittered supersampling (SSAA) in the ray tracer; MSAA in OpenGL | `rayTraceFrame` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp); [src/gl/glResources.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/gl/glResources.cpp) |
-| HDR → display | Extended Reinhard tone mapping | `toneMap` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) |
-| Same park in every 3D renderer | Ray tracer reads `ParkScene`; the sky shader is ported to C++ | [src/park3d/parkScene.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/parkScene.cpp), [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) |
-| Same textures in both 3D renderers | Textures drawn once on the CPU; bilinear sampling for rays | `drawGroundTexture`, `drawSignTexture`, `sampleTextureBilinear` in [src/park3d/parkTextures.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/parkTextures.cpp) |
-| Something that shows off reflection | A chrome mirror-ball sculpture on a plinth | `buildMirrorBall` in [src/park3d/parkModels.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/parkModels.cpp); placed in [src/park3d/parkScene.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/parkScene.cpp) |
-| Any projection, ray traced | Each pixel is unprojected through the inverse view-projection matrix | [src/raytrace/rayTracer.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.h), [src/park3d/orbitCamera.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/orbitCamera.h) |
+| **Refine and complete** | Three finished renderers of one park, plus the final report | [src/main.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/main.cpp), [src/windowMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/windowMain.cpp), [src/glMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/glMain.cpp), [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/rayMain.cpp) |
+| **CP4: final demonstration** | The walkthrough above; the up-to-date version is in the project report | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report* |
+| **CP4: what works / what doesn't / recommendations** | Written up honestly; this branch's limitations close its README | [README on `main`](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/main/README.md), section *Project report*; [this branch's README](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/README.md#limitations), section *Limitations* |
+| Ray tracing (Whitted): primary, shadow and reflection rays | `traceWhitted`: recursive mirror reflections, shadow rays, fog | [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
+| Global illumination | `tracePath`: cosine-weighted diffuse bounces, next-event estimation, Russian roulette, emission | [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
+| Ray–object intersection | Möller–Trumbore ray–triangle test, ray–box slab test | `intersectTriangle`, `rayHitsBox` in [src/raytrace/rayGeometry.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayGeometry.cpp) |
+| Making it fast enough | Median-split BVH; all CPU cores share rows of the image | `RayScene::build` / `buildNode` / `traverse` in [src/raytrace/rayGeometry.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayGeometry.cpp); `rayTraceFrame` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
+| Anti-aliasing | Stratified, jittered supersampling (SSAA) in the ray tracer; MSAA in OpenGL | `rayTraceFrame` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp); [src/gl/glResources.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/gl/glResources.cpp) |
+| HDR → display | Extended Reinhard tone mapping | `toneMap` in [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
+| Same park in every 3D renderer | Ray tracer reads `ParkScene`; the sky shader is ported to C++ | [src/park3d/parkScene.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/parkScene.cpp), [src/raytrace/rayTracer.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) |
+| Same textures in both 3D renderers | Textures drawn once on the CPU; bilinear sampling for rays | `drawGroundTexture`, `drawSignTexture`, `sampleTextureBilinear` in [src/park3d/parkTextures.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/parkTextures.cpp) |
+| Something that shows off reflection | A chrome mirror-ball sculpture on a plinth | `buildMirrorBall` in [src/park3d/parkModels.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/parkModels.cpp); placed in [src/park3d/parkScene.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/parkScene.cpp) |
+| Any projection, ray traced | Each pixel is unprojected through the inverse view-projection matrix | [src/raytrace/rayTracer.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.h), [src/park3d/orbitCamera.h](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/orbitCamera.h) |
 
 ---
 
@@ -196,10 +196,10 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 
 | File | In one sentence |
 |---|---|
-| [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/rayMain.cpp) | The command-line program: reads the options, builds the scene at time *t*, ray traces it, adds the postcard lettering and saves the image. |
-| [src/raytrace/rayGeometry.h/.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayGeometry.cpp) | Turns the park's meshes into world-space triangles, builds the BVH, and answers "what does this ray hit?" and "is this point in shadow?". |
-| [src/raytrace/rayTracer.h/.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/raytrace/rayTracer.cpp) | The two lighting methods (Whitted and path tracing), the sky, fog, tone mapping, supersampling and the multi-threaded frame loop. |
-| [src/park3d/parkTextures.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/final/src/park3d/parkTextures.cpp) | Draws the ground and sign textures once, so OpenGL and the ray tracer use the same pixels. |
+| [src/rayMain.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/rayMain.cpp) | The command-line program: reads the options, builds the scene at time *t*, ray traces it, adds the postcard lettering and saves the image. |
+| [src/raytrace/rayGeometry.h/.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayGeometry.cpp) | Turns the park's meshes into world-space triangles, builds the BVH, and answers "what does this ray hit?" and "is this point in shadow?". |
+| [src/raytrace/rayTracer.h/.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/raytrace/rayTracer.cpp) | The two lighting methods (Whitted and path tracing), the sky, fog, tone mapping, supersampling and the multi-threaded frame loop. |
+| [src/park3d/parkTextures.cpp](https://github.com/Karanei-Kimutai/ASTROWORLD/blob/checkpoint-4/src/park3d/parkTextures.cpp) | Draws the ground and sign textures once, so OpenGL and the ray tracer use the same pixels. |
 
 ---
 
@@ -223,7 +223,7 @@ In plain words: **finish it, show it, and be honest about it.** Show the finishe
 **"Why doesn't the ray-traced image have the searchlight beams?"**
 > They're a blending trick in OpenGL. The ray tracer would need volumetric scattering, which is listed under what doesn't work.
 
-**GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/final
+**GitHub link:** https://github.com/Karanei-Kimutai/ASTROWORLD/tree/checkpoint-4
 
 ---
 
