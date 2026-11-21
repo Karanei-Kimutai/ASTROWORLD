@@ -26,7 +26,7 @@ The prototype brings the earlier work together into one interactive 3D program. 
 |---|---|
 | ![Shading modes](docs/screenshots/shadingModes.png) | ![Coaster ride](docs/screenshots/coasterRide.png) |
 
-**One scene, any renderer.** `ParkScene` describes the park at any time *t*. It is a list of instances, each a mesh, a model matrix and a material, together with the lighting. It contains no graphics-API code: the OpenGL renderer simply draws the list, and one mesh is reused for every gondola, horse or visitor. The ray tracer in the final project reads exactly the same description.
+**One scene, any renderer.** `ParkScene` describes the park at any time *t*. It is a list of instances, each a mesh, a model matrix and a material, together with the lighting. It contains no graphics-API code: the OpenGL renderer simply draws the list, and one mesh is reused for every gondola, horse or visitor. The ray tracer in Checkpoint 4 reads exactly the same description.
 
 **Shading interpolation.** Flat, Gouraud and Phong shading switch live and share one lighting function:
 - **Flat:** the normal comes from the screen-space derivatives of the position, so each facet shows.
@@ -300,7 +300,7 @@ To regenerate the PNGs in `docs/screenshots/`:
 ### Scene description (prototype)
 | Concept | Implementation |
 |---|---|
-| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the final-phase ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
+| Scene graph / instancing | [parkScene.h](src/park3d/parkScene.h): the park at time *t* is a list of instances (mesh + model matrix + material) plus lighting. The OpenGL renderer draws that list; the Checkpoint 4 ray tracer traces the same list. One mesh (a gondola, a horse, a visitor) is drawn many times with different matrices and tints. |
 | Camera paths | The coaster ride camera follows the spline: eye at the front car, looking a few metres ahead along the track, banked with the car's up vector |
 
 ### Reusing earlier work in CP3
@@ -468,5 +468,5 @@ Speaker notes for this stage are in [docs/presentations/prototype.md](docs/prese
 - No shadows in real time.
 - The head's features are still ellipsoids, and the mouth is still a glowing panel.
 - Lines are one pixel wide, so the coaster's lattice thins out in the distance.
-- No ray tracing yet; that is the final project.
+- No ray tracing yet; that comes in Checkpoint 4.
 - Developed and tested on WSL2 (Ubuntu 24.04) only.

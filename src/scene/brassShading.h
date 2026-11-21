@@ -5,7 +5,7 @@
  * CP1 has no 3D geometry yet, so a 2D shape is treated as if it were the
  * front of an ellipsoid: from a pixel's normalised position (u, v) inside the
  * ellipse we rebuild a surface normal (u, v, sqrt(1 - u^2 - v^2)) and light
- * it. This previews the lighting work in the final phase, where the full
+ * it. This previews the lighting work of later checkpoints, where the full
  * Phong reflection model (ambient + diffuse + specular) is applied to real
  * 3D meshes.
  */
