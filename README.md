@@ -2,11 +2,11 @@
 
 ASTROWORLD is a theme park built from the art of Travis Scott's *Astroworld* for a Computer Graphics capstone. The giant golden head is the entrance, with its open, glowing mouth as the gate. Around it are the "Greetings from ASTROWORLD" postcard lettering, the blue-sky carnival of the album cover and the starfield of the night artwork. The project starts as a software renderer in which every pixel comes from our own C++ code, and each stage of the course builds on the one before. Every stage lives on its own branch.
 
-This is branch `blender`, which `main` also points to: the latest work, taking the project a step further after Checkpoint 4. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
+This is branch `blender`: the latest work, taking the project a step further after Checkpoint 4. `main` has the same work plus the video of the whole journey. [Earlier stages](#earlier-stages) are listed below, each on its own branch.
 
-[![Watch the journey from Checkpoint 1 to Blender](docs/media/journeyThumbnail.png)](docs/media/astroworldJourney.mp4)
+[![Watch the Blender film](docs/media/blenderThumbnail.png)](docs/media/astroworldBlender.mp4)
 
-*The journey in two minutes: every stage, filmed with that stage's own code.*
+*The park over one 30-second day, exported from our engine and rendered in Blender.*
 
 ## Contents
 
@@ -18,7 +18,7 @@ This is branch `blender`, which `main` also points to: the latest work, taking t
 6. [The rendering pipeline](#the-rendering-pipeline)
 7. [Project structure](#project-structure)
 8. [Coding conventions](#coding-conventions)
-9. [Presentation notes](#presentation-notes)
+9. [Branch guide](#branch-guide)
 10. [Limitations](#limitations)
 
 ---
@@ -591,9 +591,9 @@ docs/references/                Reference artwork the scene is matched against (
 
 ---
 
-## Presentation notes
+## Branch guide
 
-Speaker notes for this stage are in [docs/presentations/blender.md](docs/presentations/blender.md). They cover the brief, a script, and where each piece of work lives in the code. The [index](docs/presentations/README.md) lists the notes for every stage.
+[docs/guides/blender.md](docs/guides/blender.md) describes this stage: what it set out to do, what we built and how it works, with links to the code. The [index](docs/guides/README.md) lists the guides for every stage.
 
 ---
 
